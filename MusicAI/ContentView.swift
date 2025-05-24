@@ -10,6 +10,9 @@ struct WebView: UIViewRepresentable {
         // 在底部工具列高度 (約56pt) 預留空間，不讓內容被擋住
         let toolbarHeight: CGFloat = 56
         webView.scrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: toolbarHeight, right: 0)
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.backgroundColor = .clear
         webView.scrollView.scrollIndicatorInsets = webView.scrollView.contentInset
         return webView
     }
@@ -72,7 +75,8 @@ struct ContentView: View {
     @State private var isLongPressing = false
     @State private var showToolbar = false  // 控制工具列顯示
     
-    let url = URL(string: "https://100.86.143.102:5000/")!
+    let url = URL(string: "http://100.86.143.102:5000/")!
+    //let url = URL(string: "https://100.86.143.102:5000/")!
     //let url = URL(string: "https://google.com/")!
     
     
@@ -80,6 +84,7 @@ struct ContentView: View {
     
     var body: some View {
         ZStack(alignment: .trailing) {
+            Color.black.ignoresSafeArea()
             WebView(webView: webView, showToolbar: $showToolbar)
                 .onAppear {
                     let request = URLRequest(url: url)
@@ -136,7 +141,6 @@ struct ContentView: View {
             }
         }
         .ignoresSafeArea(.all, edges: .top)
-        .statusBar(hidden: true)
         .sheet(isPresented: $showShareSheet) {
             if let shareURL = webView.url {
                 ShareSheet(activityItems: [shareURL])
@@ -174,5 +178,9 @@ import UIKit
 /// 使用自訂 HostingController 隱藏 Home Indicator
 class HostingController: UIHostingController<ContentView> {
     //override var prefersHomeIndicatorAutoHidden: Bool {  }
+
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        .darkContent
+    }
 }
 #endif
