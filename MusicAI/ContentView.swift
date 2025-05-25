@@ -162,7 +162,8 @@ struct ContentView: View {
                 let dataStore = WKWebsiteDataStore.default()
                 let types = WKWebsiteDataStore.allWebsiteDataTypes()
                 dataStore.removeData(ofTypes: types, modifiedSince: Date.distantPast) {
-                    webView.reload()
+                    let homeRequest = URLRequest(url: url)
+                    webView.load(homeRequest)
                 }
             }
             Button("取消", role: .cancel) {}
