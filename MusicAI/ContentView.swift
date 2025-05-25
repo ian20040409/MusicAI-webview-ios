@@ -65,6 +65,17 @@ struct ContentView: View {
         // 如需攔截或注入腳本，可使用 userContentController
         config.userContentController = WKUserContentController()
        
+        let zoomDisableScript = """
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+        document.head.appendChild(meta);
+        """
+        let userScript = WKUserScript(source: zoomDisableScript,
+                                      injectionTime: .atDocumentEnd,
+                                      forMainFrameOnly: true)
+        config.userContentController.addUserScript(userScript)
+       
         let webView = WKWebView(frame: .zero, configuration: config)
         // Mimic Safari to support reCAPTCHA
         webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
@@ -74,6 +85,9 @@ struct ContentView: View {
     @State private var showExportView = false
     @State private var isLongPressing = false
     @State private var showToolbar = false  // 控制工具列顯示
+    @State private var showingURLPrompt = false
+    @State private var newURLString = ""
+    @State private var showingShareOptions = false
     
     let url = URL(string: "http://100.86.143.102:5000/")!
     //let url = URL(string: "https://100.86.143.102:5000/")!
@@ -83,7 +97,7 @@ struct ContentView: View {
     
     
     var body: some View {
-        ZStack(alignment: .trailing) {
+        ZStack(alignment: .bottom) {
             Color.black.ignoresSafeArea()
             WebView(webView: webView, showToolbar: $showToolbar)
                 .onAppear {
@@ -94,36 +108,27 @@ struct ContentView: View {
             // Safari 風格底部工具列
             VStack {
                 Spacer()
-                HStack {
-                    Button(action: {
-                        if webView.canGoBack { webView.goBack() }
-                    }) {
-                        Image(systemName: "chevron.left")
-                    }
-                    Spacer()
-                    Button(action: {
-                        if webView.canGoForward { webView.goForward() }
-                    }) {
-                        Image(systemName: "chevron.right")
-                    }
-                    Spacer()
+                HStack(spacing: 40) {
                     Button(action: {
                         let homeRequest = URLRequest(url: url)
                         webView.load(homeRequest)
                     }) {
                         Image(systemName: "arrow.clockwise")
+                            .foregroundColor(.primary)
                     }
-                    Spacer()
-                    Button(action: { showShareSheet = true }) {
+                    Button(action: {
+                        showingShareOptions = true
+                    }) {
                         Image(systemName: "square.and.arrow.up")
+                            .foregroundColor(.primary)
                     }
                 }
-                .padding(.horizontal, 30)
+                .padding(.horizontal, 12)
                 .padding(.vertical, 12)
-                .background(.ultraThinMaterial)
+                .background(.ultraThickMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                 .shadow(radius: 5)
-                .padding(.horizontal, 60)
+                .padding(.bottom, 16)
             }
             .opacity(showToolbar ? 1 : 0)
             .animation(.easeInOut, value: showToolbar)
@@ -136,7 +141,7 @@ struct ContentView: View {
         }
         .onAppear {
             // 首次顯示後自動隱藏工具列
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                 withAnimation { showToolbar = false }
             }
         }
@@ -146,9 +151,35 @@ struct ContentView: View {
                 ShareSheet(activityItems: [shareURL])
             }
         }
+        .confirmationDialog("分享選項", isPresented: $showingShareOptions) {
+            Button("分享此頁面") {
+                showShareSheet = true
+            }
+            Button("更改網址") {
+                showingURLPrompt = true
+            }
+            Button("刪除所有瀏覽器資料") {
+                let dataStore = WKWebsiteDataStore.default()
+                let types = WKWebsiteDataStore.allWebsiteDataTypes()
+                dataStore.removeData(ofTypes: types, modifiedSince: Date.distantPast) {
+                    webView.reload()
+                }
+            }
+            Button("取消", role: .cancel) {}
+        }
+        .alert("更改網址", isPresented: $showingURLPrompt) {
+            TextField("請輸入新網址", text: $newURLString)
+            Button("確定") {
+                if let newURL = URL(string: newURLString) {
+                    let request = URLRequest(url: newURL)
+                    webView.load(request)
+                }
+            }
+            Button("取消", role: .cancel) { }
+        }
         .onChange(of: showToolbar) { visible in
             if visible {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                     withAnimation { showToolbar = false }
                 }
             }
