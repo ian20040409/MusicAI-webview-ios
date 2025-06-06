@@ -89,7 +89,7 @@ struct ContentView: View {
     @State private var newURLString = ""
     @State private var showingShareOptions = false
     
-    let url = URL(string: "http://100.86.143.102:5000/")!
+    let url = URL(string: "https://lnu.nttu.edu.tw/app/")!
     //let url = URL(string: "https://100.86.143.102:5000/")!
     //let url = URL(string: "https://google.com/")!
     
@@ -109,11 +109,22 @@ struct ContentView: View {
             VStack {
                 Spacer()
                 HStack(spacing: 40) {
+                    Button(action:{
+                        if webView.canGoBack {
+                            webView.goBack()
+                        }
+                    }) {
+                        Image(systemName: "chevron.backward")
+                            .foregroundColor(.primary)
+                   
+                    }
+                    
+                    
                     Button(action: {
                         let homeRequest = URLRequest(url: url)
                         webView.load(homeRequest)
                     }) {
-                        Image(systemName: "arrow.clockwise")
+                        Image(systemName: "house")
                             .foregroundColor(.primary)
                     }
                     Button(action: {
