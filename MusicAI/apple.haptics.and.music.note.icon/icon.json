@@ -3,8 +3,8 @@
     {
       "value" : {
         "linear-gradient" : [
-          "display-p3:0.44873,0.59649,0.92229,1.00000",
-          "display-p3:0.49705,0.36706,0.72850,1.00000"
+          "display-p3:0.73226,0.85444,1.00000,1.00000",
+          "display-p3:0.87351,0.73784,1.00000,1.00000"
         ]
       }
     },
@@ -23,6 +23,9 @@
       "layers" : [
         {
           "blend-mode" : "screen",
+          "fill" : {
+            "automatic-gradient" : "extended-gray:1.00000,1.00000"
+          },
           "image-name" : "apple.haptics.and.music.note.png",
           "name" : "apple.haptics.and.music.note",
           "position" : {
