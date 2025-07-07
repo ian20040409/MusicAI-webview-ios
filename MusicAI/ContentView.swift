@@ -112,18 +112,20 @@ struct ContentView: View {
                 webView: webView,
                 url: url
             )
-            .presentationDetents([.medium])
+            .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
         .alert("更改網址", isPresented: $showingURLPrompt) {
             TextField("請輸入新網址", text: $newURLString)
+            
+            Button("取消") { }
             Button("確定") {
                 if let newURL = URL(string: newURLString) {
                     let request = URLRequest(url: newURL)
                     webView.load(request)
                 }
+            
             }
-            Button("取消", role: .cancel) { }
         }
     }
 }
@@ -154,80 +156,228 @@ struct LiquidGlassButtonStyle: ButtonStyle {
     }
 }
 
-// Share Options View with Liquid Glass design
+// Share Options View with Enhanced Liquid Glass design
 struct ShareOptionsView: View {
     @Binding var showShareSheet: Bool
     @Binding var showingURLPrompt: Bool
     let webView: WKWebView
     let url: URL
     @Environment(\.dismiss) private var dismiss
+    @State private var showingClearDataAlert = false
+    @State private var isLoading = false
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                // Header
-                VStack(spacing: 8) {
-                    Text("分享選項")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    if let currentURL = webView.url {
-                        Text(currentURL.host ?? "")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding(.top, 20)
-                
-                // Options List
-                VStack(spacing: 16) {
-                    ShareOptionButton(
-                        icon: "square.and.arrow.up",
-                        title: "分享此頁面",
-                        subtitle: "分享當前網頁連結"
-                    ) {
-                        dismiss()
-                        showShareSheet = true
-                    }
-                    
-                    ShareOptionButton(
-                        icon: "link",
-                        title: "更改網址",
-                        subtitle: "導航到新的網址"
-                    ) {
-                        dismiss()
-                        showingURLPrompt = true
-                    }
-                    
-                    ShareOptionButton(
-                        icon: "trash",
-                        title: "刪除所有瀏覽器資料",
-                        subtitle: "清除快取、Cookie 和瀏覽記錄",
-                        isDestructive: true
-                    ) {
-                        let dataStore = WKWebsiteDataStore.default()
-                        let types = WKWebsiteDataStore.allWebsiteDataTypes()
-                        dataStore.removeData(ofTypes: types, modifiedSince: Date.distantPast) {
-                            let homeRequest = URLRequest(url: url)
-                            webView.load(homeRequest)
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Enhanced Header with page info
+                    VStack(spacing: 12) {
+                        // Icon and title
+                        HStack {
+                            Image(systemName: "safari")
+                                .font(.title2)
+                                .foregroundColor(.accentColor)
+                            
+                            Text("瀏覽器選項")
+                                .font(.title2)
+                                .fontWeight(.semibold)
                         }
-                        dismiss()
+                        
+                        // Current page info card
+                        if let currentURL = webView.url {
+                            VStack(spacing: 6) {
+                                Text(webView.title ?? "載入中...")
+                                    .font(.body)
+                                    .fontWeight(.medium)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(2)
+                                
+                                Text(currentURL.host ?? currentURL.absoluteString)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 12, style: .continuous))
+                        }
                     }
+                    .padding(.top, 8)
+                    
+                    // Enhanced Options List with sections
+                    VStack(spacing: 20) {
+                        // Navigation Section
+                        VStack(spacing: 12) {
+                            SectionHeader(title: "導航", icon: "location")
+                            
+                            VStack(spacing: 8) {
+                                ShareOptionButton(
+                                    icon: "arrow.clockwise",
+                                    title: "重新載入",
+                                    subtitle: "重新載入當前頁面"
+                                ) {
+                                    webView.reload()
+                                    dismiss()
+                                }
+                                
+                                ShareOptionButton(
+                                    icon: "house",
+                                    title: "回到首頁",
+                                    subtitle: "返回到主頁面"
+                                ) {
+                                    let homeRequest = URLRequest(url: url)
+                                    webView.load(homeRequest)
+                                    dismiss()
+                                }
+                                
+                                ShareOptionButton(
+                                    icon: "link",
+                                    title: "更改網址",
+                                    subtitle: "導航到新的網址"
+                                ) {
+                                    dismiss()
+                                    showingURLPrompt = true
+                                }
+                            }
+                        }
+                        
+                        // Sharing Section
+                        VStack(spacing: 12) {
+                            SectionHeader(title: "分享", icon: "square.and.arrow.up")
+                            
+                            VStack(spacing: 8) {
+                                ShareOptionButton(
+                                    icon: "square.and.arrow.up",
+                                    title: "分享此頁面",
+                                    subtitle: "分享當前網頁連結"
+                                ) {
+                                    dismiss()
+                                    showShareSheet = true
+                                }
+                                
+                                ShareOptionButton(
+                                    icon: "doc.on.doc",
+                                    title: "複製連結",
+                                    subtitle: "複製當前頁面網址到剪貼板"
+                                ) {
+                                    if let currentURL = webView.url {
+                                        UIPasteboard.general.string = currentURL.absoluteString
+                                        // Add haptic feedback
+                                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                        impactFeedback.impactOccurred()
+                                    }
+                                    dismiss()
+                                }
+                            }
+                        }
+                        
+                        // Privacy Section
+                        VStack(spacing: 12) {
+                            SectionHeader(title: "隱私", icon: "hand.raised", isDestructive: true)
+                            
+                            ShareOptionButton(
+                                icon: "trash",
+                                title: "清除瀏覽資料",
+                                subtitle: "刪除快取、Cookie 和瀏覽記錄",
+                                isDestructive: true
+                            ) {
+                                showingClearDataAlert = true
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    
+                    Spacer(minLength: 20)
                 }
-                .padding(.horizontal, 20)
-                
-                Spacer()
+                .padding(.vertical, 20)
             }
             .background(.regularMaterial)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") {
+                    Button(action: {
                         dismiss()
+                    }) {
+                        Image(systemName: "xmark")
                     }
                     .fontWeight(.semibold)
                 }
             }
+        }
+        .alert("清除瀏覽資料", isPresented: $showingClearDataAlert) {
+            Button("清除", role: .destructive) {
+                clearBrowsingData()
+            }
+            Button("取消", role: .cancel) { }
+        } message: {
+            Text("這將會刪除所有快取、Cookie、瀏覽記錄和網站資料。此操作無法復原。")
+        }
+        .overlay {
+            if isLoading {
+                LoadingOverlay()
+            }
+        }
+    }
+    
+    private func clearBrowsingData() {
+        isLoading = true
+        let dataStore = WKWebsiteDataStore.default()
+        let types = WKWebsiteDataStore.allWebsiteDataTypes()
+        
+        dataStore.removeData(ofTypes: types, modifiedSince: Date.distantPast) {
+            DispatchQueue.main.async {
+                isLoading = false
+                let homeRequest = URLRequest(url: url)
+                webView.load(homeRequest)
+                dismiss()
+            }
+        }
+    }
+}
+
+// Section Header Component
+struct SectionHeader: View {
+    let title: String
+    let icon: String
+    var isDestructive: Bool = false
+    
+    var body: some View {
+        HStack {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundColor(isDestructive ? .red : .secondary)
+            
+            Text(title)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(isDestructive ? .red : .secondary)
+                .textCase(.uppercase)
+            
+            Spacer()
+        }
+        .padding(.horizontal, 4)
+    }
+}
+
+// Loading Overlay Component
+struct LoadingOverlay: View {
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 16) {
+                ProgressView()
+                    .scaleEffect(1.2)
+                    .tint(.white)
+                
+                Text("清除資料中...")
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+            }
+            .padding(24)
+            .background(.regularMaterial, in: .rect(cornerRadius: 16, style: .continuous))
         }
     }
 }
