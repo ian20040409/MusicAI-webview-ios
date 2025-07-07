@@ -105,22 +105,15 @@ struct ContentView: View {
                 ShareSheet(activityItems: [shareURL])
             }
         }
-        .confirmationDialog("分享選項", isPresented: $showingShareOptions) {
-            Button("分享此頁面") {
-                showShareSheet = true
-            }
-            Button("更改網址") {
-                showingURLPrompt = true
-            }
-            Button("刪除所有瀏覽器資料") {
-                let dataStore = WKWebsiteDataStore.default()
-                let types = WKWebsiteDataStore.allWebsiteDataTypes()
-                dataStore.removeData(ofTypes: types, modifiedSince: Date.distantPast) {
-                    let homeRequest = URLRequest(url: url)
-                    webView.load(homeRequest)
-                }
-            }
-            Button("取消", role: .cancel) {}
+        .sheet(isPresented: $showingShareOptions) {
+            ShareOptionsView(
+                showShareSheet: $showShareSheet,
+                showingURLPrompt: $showingURLPrompt,
+                webView: webView,
+                url: url
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
         .alert("更改網址", isPresented: $showingURLPrompt) {
             TextField("請輸入新網址", text: $newURLString)
@@ -149,6 +142,136 @@ struct ShareSheet: UIViewControllerRepresentable {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
+    }
+}
+
+// Official Liquid Glass Button Style following Apple guidelines
+struct LiquidGlassButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// Share Options View with Liquid Glass design
+struct ShareOptionsView: View {
+    @Binding var showShareSheet: Bool
+    @Binding var showingURLPrompt: Bool
+    let webView: WKWebView
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // Header
+                VStack(spacing: 8) {
+                    Text("分享選項")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    if let currentURL = webView.url {
+                        Text(currentURL.host ?? "")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.top, 20)
+                
+                // Options List
+                VStack(spacing: 16) {
+                    ShareOptionButton(
+                        icon: "square.and.arrow.up",
+                        title: "分享此頁面",
+                        subtitle: "分享當前網頁連結"
+                    ) {
+                        dismiss()
+                        showShareSheet = true
+                    }
+                    
+                    ShareOptionButton(
+                        icon: "link",
+                        title: "更改網址",
+                        subtitle: "導航到新的網址"
+                    ) {
+                        dismiss()
+                        showingURLPrompt = true
+                    }
+                    
+                    ShareOptionButton(
+                        icon: "trash",
+                        title: "刪除所有瀏覽器資料",
+                        subtitle: "清除快取、Cookie 和瀏覽記錄",
+                        isDestructive: true
+                    ) {
+                        let dataStore = WKWebsiteDataStore.default()
+                        let types = WKWebsiteDataStore.allWebsiteDataTypes()
+                        dataStore.removeData(ofTypes: types, modifiedSince: Date.distantPast) {
+                            let homeRequest = URLRequest(url: url)
+                            webView.load(homeRequest)
+                        }
+                        dismiss()
+                    }
+                }
+                .padding(.horizontal, 20)
+                
+                Spacer()
+            }
+            .background(.regularMaterial)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("完成") {
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
+        }
+    }
+}
+
+// Individual Share Option Button
+struct ShareOptionButton: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    var isDestructive: Bool = false
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(isDestructive ? .red : .accentColor)
+                    .frame(width: 32, height: 32)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(isDestructive ? .red : .primary)
+                        .multilineTextAlignment(.leading)
+                    
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(Color.secondary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(LiquidGlassButtonStyle())
     }
 }
 
