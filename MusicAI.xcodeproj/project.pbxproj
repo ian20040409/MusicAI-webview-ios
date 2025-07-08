@@ -200,11 +200,11 @@
 				};
 			};
 			buildConfigurationList = 3C9A2D4B2DDE113500A10D59 /* Build configuration list for PBXProject "MusicAI" */;
-			developmentRegion = en;
+			developmentRegion = "zh-Hant";
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				en,
 				Base,
+				"zh-Hant",
 			);
 			mainGroup = 3C9A2D472DDE113500A10D59;
 			minimizedProjectReferenceProxies = 1;

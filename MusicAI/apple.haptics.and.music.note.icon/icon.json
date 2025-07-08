@@ -3,8 +3,8 @@
     {
       "value" : {
         "linear-gradient" : [
-          "display-p3:0.76105,0.87517,1.00000,1.00000",
-          "display-p3:0.42610,0.34261,1.00000,1.00000"
+          "display-p3:0.74962,0.69078,0.87297,1.00000",
+          "display-p3:0.57834,0.67890,0.86109,1.00000"
         ]
       }
     },
@@ -22,17 +22,18 @@
     {
       "layers" : [
         {
-          "blend-mode" : "screen",
-          "fill" : {
-            "automatic-gradient" : "extended-gray:1.00000,1.00000"
-          },
+          "blend-mode" : "multiply",
+          "fill" : "automatic",
+          "glass" : true,
+          "hidden" : false,
           "image-name" : "apple.haptics.and.music.note.png",
           "name" : "apple.haptics.and.music.note",
+          "opacity" : 0.77,
           "position" : {
-            "scale" : 0.6,
+            "scale" : 0.63,
             "translation-in-points" : [
               0,
-              0
+              10
             ]
           }
         }
