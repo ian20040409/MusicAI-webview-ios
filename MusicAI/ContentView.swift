@@ -206,6 +206,37 @@ struct ShareOptionsView: View {
                     
                     // Enhanced Options List with sections
                     VStack(spacing: 20) {
+                        
+                        // Sharing Section
+                        VStack(spacing: 12) {
+                            SectionHeader(title: "分享", icon: "square.and.arrow.up")
+                            
+                            VStack(spacing: 8) {
+                                ShareOptionButton(
+                                    icon: "square.and.arrow.up",
+                                    title: "分享此頁面",
+                                    subtitle: "分享當前網頁連結"
+                                ) {
+                                    dismiss()
+                                    showShareSheet = true
+                                }
+                                
+                                ShareOptionButton(
+                                    icon: "doc.on.doc",
+                                    title: "複製連結",
+                                    subtitle: "複製當前頁面網址到剪貼板"
+                                ) {
+                                    if let currentURL = webView.url {
+                                        UIPasteboard.general.string = currentURL.absoluteString
+                                        // Add haptic feedback
+                                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                        impactFeedback.impactOccurred()
+                                    }
+                                    dismiss()
+                                }
+                            }
+                        }
+                        
                         // Navigation Section
                         VStack(spacing: 12) {
                             SectionHeader(title: "導航", icon: "location")
@@ -241,35 +272,7 @@ struct ShareOptionsView: View {
                             }
                         }
                         
-                        // Sharing Section
-                        VStack(spacing: 12) {
-                            SectionHeader(title: "分享", icon: "square.and.arrow.up")
-                            
-                            VStack(spacing: 8) {
-                                ShareOptionButton(
-                                    icon: "square.and.arrow.up",
-                                    title: "分享此頁面",
-                                    subtitle: "分享當前網頁連結"
-                                ) {
-                                    dismiss()
-                                    showShareSheet = true
-                                }
-                                
-                                ShareOptionButton(
-                                    icon: "doc.on.doc",
-                                    title: "複製連結",
-                                    subtitle: "複製當前頁面網址到剪貼板"
-                                ) {
-                                    if let currentURL = webView.url {
-                                        UIPasteboard.general.string = currentURL.absoluteString
-                                        // Add haptic feedback
-                                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                                        impactFeedback.impactOccurred()
-                                    }
-                                    dismiss()
-                                }
-                            }
-                        }
+                        
                         
                         // Privacy Section
                         VStack(spacing: 12) {
