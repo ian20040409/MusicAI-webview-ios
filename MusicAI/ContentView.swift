@@ -161,7 +161,7 @@ struct WebView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             // 設定要向上捲動的距離，您可以根據需求調整這個數值
            
-            let scrollPoint = CGPoint(x: 0, y: 10)
+            let scrollPoint = CGPoint(x: 0, y: 20)
             
             // 使用動畫讓捲動看起來更平滑
             webView.scrollView.setContentOffset(scrollPoint, animated: true)
