@@ -1,9 +1,12 @@
 import SwiftUI
 import WebKit
 
-// MARK: - WebView 容器視圖 (原 ContentView)
+// MARK: - WebView 容器視圖
 @MainActor
 struct WebViewContainerView: View {
+    // ▼ 新增：取得環境中的 dismiss 動作，用於返回上一頁
+    @Environment(\.dismiss) private var dismiss
+
     @State private var webView: WKWebView = {
         let config = WKWebViewConfiguration()
         HTTPCookieStorage.shared.cookieAcceptPolicy = .always
@@ -56,7 +59,19 @@ struct WebViewContainerView: View {
                 .ignoresSafeArea()
         }
         .navigationBarTitleDisplayMode(.inline)
+        // ▼ 新增：隱藏系統預設的返回按鈕
+        .navigationBarBackButtonHidden(true)
         .toolbar {
+            // ▼ 新增：在左上角加入自訂的選單按鈕
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    // 呼叫 dismiss 來返回主選單
+                    dismiss()
+                }) {
+                    Image(systemName: "line.3.horizontal") // 使用漢堡選單圖示
+                }
+            }
+            
             ToolbarItemGroup(placement: .bottomBar) {
                 Button(action: {
                     if webView.canGoBack {
@@ -120,7 +135,7 @@ struct WebView: UIViewRepresentable {
     let webView: WKWebView
     
     func makeUIView(context: Context) -> WKWebView {
-        // ▼ 設定 navigationDelegate，以便追蹤網頁載入狀態
+        // 設定 navigationDelegate，以便追蹤網頁載入狀態
         webView.navigationDelegate = context.coordinator
         return webView
     }
@@ -129,12 +144,12 @@ struct WebView: UIViewRepresentable {
         // 無需更新
     }
     
-    // ▼ 新增：建立 Coordinator 來處理代理事件
+    // 建立 Coordinator 來處理代理事件
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
 
-    // ▼ 新增：Coordinator 類別，負責監聽網頁載入完成事件
+    // Coordinator 類別，負責監聽網頁載入完成事件
     class Coordinator: NSObject, WKNavigationDelegate {
         var parent: WebView
 
@@ -145,7 +160,7 @@ struct WebView: UIViewRepresentable {
         // 當網頁內容載入完成時，這個方法會被呼叫
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             // 設定要向上捲動的距離，您可以根據需求調整這個數值
-            // 例如，向上捲動 100 個點
+           
             let scrollPoint = CGPoint(x: 0, y: 10)
             
             // 使用動畫讓捲動看起來更平滑
@@ -326,7 +341,7 @@ struct ShareOptionsView: View {
         }
         .alert("清除瀏覽資料", isPresented: $showingClearDataAlert) {
             Button("清除", role: .destructive) {
-                clearBrowseData()
+                clearBrowsingData()
             }
             Button("取消", role: .cancel) { }
         } message: {
@@ -339,7 +354,7 @@ struct ShareOptionsView: View {
         }
     }
     
-    private func clearBrowseData() {
+    private func clearBrowsingData() {
         isLoading = true
         let dataStore = WKWebsiteDataStore.default()
         let types = WKWebsiteDataStore.allWebsiteDataTypes()
