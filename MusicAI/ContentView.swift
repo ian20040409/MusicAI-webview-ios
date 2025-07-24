@@ -28,7 +28,7 @@ struct WebViewContainerView: View {
         config.userContentController.addUserScript(userScript)
        
         let webView = WKWebView(frame: .zero, configuration: config)
-        // ▼ 讓 WebView 背景透明
+        // 讓 WebView 背景透明
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
@@ -44,7 +44,7 @@ struct WebViewContainerView: View {
     
     var body: some View {
         ZStack {
-            // ▼ 將背景改回黑色，或任何您喜歡的顏色
+            // 將背景改回黑色，或任何您喜歡的顏色
             Color.black.ignoresSafeArea()
             
             WebView(webView: webView)
@@ -52,7 +52,7 @@ struct WebViewContainerView: View {
                     let request = URLRequest(url: url)
                     webView.load(request)
                 }
-                // ▼ 修改：移除邊距和圓角，並確保忽略所有安全區域
+                // 移除邊距和圓角，並確保忽略所有安全區域
                 .ignoresSafeArea()
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -120,11 +120,37 @@ struct WebView: UIViewRepresentable {
     let webView: WKWebView
     
     func makeUIView(context: Context) -> WKWebView {
+        // ▼ 設定 navigationDelegate，以便追蹤網頁載入狀態
+        webView.navigationDelegate = context.coordinator
         return webView
     }
     
     func updateUIView(_ uiView: WKWebView, context: Context) {
         // 無需更新
+    }
+    
+    // ▼ 新增：建立 Coordinator 來處理代理事件
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    // ▼ 新增：Coordinator 類別，負責監聽網頁載入完成事件
+    class Coordinator: NSObject, WKNavigationDelegate {
+        var parent: WebView
+
+        init(_ parent: WebView) {
+            self.parent = parent
+        }
+
+        // 當網頁內容載入完成時，這個方法會被呼叫
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            // 設定要向上捲動的距離，您可以根據需求調整這個數值
+            // 例如，向上捲動 100 個點
+            let scrollPoint = CGPoint(x: 0, y: 10)
+            
+            // 使用動畫讓捲動看起來更平滑
+            webView.scrollView.setContentOffset(scrollPoint, animated: true)
+        }
     }
 }
 
@@ -300,7 +326,7 @@ struct ShareOptionsView: View {
         }
         .alert("清除瀏覽資料", isPresented: $showingClearDataAlert) {
             Button("清除", role: .destructive) {
-                clearBrowsingData()
+                clearBrowseData()
             }
             Button("取消", role: .cancel) { }
         } message: {
@@ -313,7 +339,7 @@ struct ShareOptionsView: View {
         }
     }
     
-    private func clearBrowsingData() {
+    private func clearBrowseData() {
         isLoading = true
         let dataStore = WKWebsiteDataStore.default()
         let types = WKWebsiteDataStore.allWebsiteDataTypes()
