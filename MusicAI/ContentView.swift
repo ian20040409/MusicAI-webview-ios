@@ -1,28 +1,11 @@
 import SwiftUI
 import WebKit
 
-/// 封裝 WKWebView 的 UIViewRepresentable
-struct WebView: UIViewRepresentable {
-    let webView: WKWebView
-    
-    func makeUIView(context: Context) -> WKWebView {
-        webView.isOpaque = false
-        webView.backgroundColor = .clear
-        webView.scrollView.backgroundColor = .clear
-        return webView
-    }
-    
-    func updateUIView(_ uiView: WKWebView, context: Context) {
-        // 無需更新
-    }
-}
-
-// 為了避免因 WKWebView 不是 Sendable 的警告，將 ContentView 限制在主執行緒上
+// MARK: - WebView 容器視圖 (原 ContentView)
 @MainActor
-struct ContentView: View {
+struct WebViewContainerView: View {
     @State private var webView: WKWebView = {
         let config = WKWebViewConfiguration()
-        // 允許接受所有 cookie，確保 ReCAPTCHA cookie 正常運作
         HTTPCookieStorage.shared.cookieAcceptPolicy = .always
         
         let webpagePrefs = WKWebpagePreferences()
@@ -31,7 +14,6 @@ struct ContentView: View {
         config.allowsInlineMediaPlayback = true
         config.websiteDataStore = WKWebsiteDataStore.default()
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
-        // 如需攔截或注入腳本，可使用 userContentController
         config.userContentController = WKUserContentController()
        
         let zoomDisableScript = """
@@ -46,8 +28,10 @@ struct ContentView: View {
         config.userContentController.addUserScript(userScript)
        
         let webView = WKWebView(frame: .zero, configuration: config)
-        // Mimic Safari to support reCAPTCHA
-        
+        // ▼ 讓 WebView 背景透明
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.backgroundColor = .clear
         return webView
     }()
     
@@ -59,45 +43,43 @@ struct ContentView: View {
     let url = URL(string: "https://lnu.nttu.edu.tw/app/")!
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // 維持黑色背景，避免網頁透明或載入時閃爍白邊
-                Color.black.ignoresSafeArea()
+        ZStack {
+            // ▼ 將背景改回黑色，或任何您喜歡的顏色
+            Color.black.ignoresSafeArea()
+            
+            WebView(webView: webView)
+                .onAppear {
+                    let request = URLRequest(url: url)
+                    webView.load(request)
+                }
+                // ▼ 修改：移除邊距和圓角，並確保忽略所有安全區域
+                .ignoresSafeArea()
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .bottomBar) {
+                Button(action: {
+                    if webView.canGoBack {
+                        webView.goBack()
+                    }
+                }) {
+                    Image(systemName: "chevron.backward")
+                }
                 
-                WebView(webView: webView)
-                    .onAppear {
-                        let request = URLRequest(url: url)
-                        webView.load(request)
-                    }
-                    // ▼▼▼ 修改此處 ▼▼▼
-                    .ignoresSafeArea() // 讓 WebView 忽略所有安全區域，以佔滿全螢幕
-                    // ▲▲▲ 修改此處 ▲▲▲
-                    .toolbar {
-                        ToolbarItemGroup(placement: .bottomBar) {
-                            Button(action: {
-                                if webView.canGoBack {
-                                    webView.goBack()
-                                }
-                            }) {
-                                Image(systemName: "chevron.backward")
-                            }
-                            
-                            Spacer()
-                            
-                            Button(action: {
-                                let homeRequest = URLRequest(url: url)
-                                webView.load(homeRequest)
-                            }) {
-                                Image(systemName: "house")
-                            }
-                            
-                            Button(action: {
-                                showingShareOptions = true
-                            }) {
-                                Image(systemName: "square.and.arrow.up")
-                            }
-                        }
-                    }
+                Spacer()
+                
+                Button(action: {
+                    let homeRequest = URLRequest(url: url)
+                    webView.load(homeRequest)
+                }) {
+                    Image(systemName: "house")
+                }
+                
+                Button(action: {
+                    showingShareOptions = true
+                }) {
+                    Image(systemName: "square.and.arrow.up")
+                }
             }
         }
         .sheet(isPresented: $showShareSheet) {
@@ -130,6 +112,23 @@ struct ContentView: View {
     }
 }
 
+
+// MARK: - 輔助視圖
+
+/// 封裝 WKWebView 的 UIViewRepresentable
+struct WebView: UIViewRepresentable {
+    let webView: WKWebView
+    
+    func makeUIView(context: Context) -> WKWebView {
+        return webView
+    }
+    
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        // 無需更新
+    }
+}
+
+
 // UIKit 分享控制器包裝
 struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
@@ -139,12 +138,6 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
     
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
-    }
 }
 
 // Official Liquid Glass Button Style following Apple guidelines
@@ -271,8 +264,6 @@ struct ShareOptionsView: View {
                                 }
                             }
                         }
-                        
-                        
                         
                         // Privacy Section
                         VStack(spacing: 12) {
@@ -428,14 +419,3 @@ struct ShareOptionButton: View {
     }
 }
 
-#if canImport(UIKit)
-import UIKit
-/// 使用自訂 HostingController 隱藏 Home Indicator
-class HostingController: UIHostingController<ContentView> {
-    //override var prefersHomeIndicatorAutoHidden: Bool { true }
-
-    override var preferredStatusBarStyle: UIStatusBarStyle {
-        .darkContent
-    }
-}
-#endif
