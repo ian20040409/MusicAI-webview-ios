@@ -43,7 +43,7 @@ struct WebViewContainerView: View {
     @State private var newURLString = ""
     @State private var showingShareOptions = false
     
-    let url = URL(string: "https://lnu.nttu.edu.tw/app/")!
+    let url = URL(string: "https://3deaba1531ad.ngrok-free.app/")!
     
     var body: some View {
         ZStack {
@@ -63,39 +63,26 @@ struct WebViewContainerView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar {
             // ▼ 新增：在左上角加入自訂的選單按鈕
-            ToolbarItem(placement: .navigationBarLeading) {
+            
+            ToolbarItem(placement: .automatic) {
                 Button(action: {
                     // 呼叫 dismiss 來返回主選單
                     dismiss()
                 }) {
-                    Image(systemName: "line.3.horizontal") // 使用漢堡選單圖示
-                }
-            }
-            
-            ToolbarItemGroup(placement: .bottomBar) {
-                Button(action: {
-                    if webView.canGoBack {
-                        webView.goBack()
-                    }
-                }) {
                     Image(systemName: "chevron.backward")
                 }
+            }
                 
-                Spacer()
-                
-                Button(action: {
-                    let homeRequest = URLRequest(url: url)
-                    webView.load(homeRequest)
-                }) {
-                    Image(systemName: "house")
-                }
+            ToolbarItem(placement: .automatic) {
                 
                 Button(action: {
                     showingShareOptions = true
                 }) {
-                    Image(systemName: "square.and.arrow.up")
+                    Image(systemName: "filemenu.and.pointer.arrow")
                 }
             }
+            
+            
         }
         .sheet(isPresented: $showShareSheet) {
             if let shareURL = webView.url {
@@ -190,7 +177,8 @@ struct LiquidGlassButtonStyle: ButtonStyle {
     }
 }
 
-// Share Options View with Enhanced Liquid Glass design
+
+// Share Options View
 struct ShareOptionsView: View {
     @Binding var showShareSheet: Bool
     @Binding var showingURLPrompt: Bool
@@ -217,7 +205,7 @@ struct ShareOptionsView: View {
                                 .fontWeight(.semibold)
                         }
                         
-                        // Current page info card
+                        // Current page info card - 只顯示標題
                         if let currentURL = webView.url {
                             VStack(spacing: 6) {
                                 Text(webView.title ?? "載入中...")
@@ -225,11 +213,6 @@ struct ShareOptionsView: View {
                                     .fontWeight(.medium)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(2)
-                                
-                                Text(currentURL.host ?? currentURL.absoluteString)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(1)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -241,37 +224,7 @@ struct ShareOptionsView: View {
                     // Enhanced Options List with sections
                     VStack(spacing: 20) {
                         
-                        // Sharing Section
-                        VStack(spacing: 12) {
-                            SectionHeader(title: "分享", icon: "square.and.arrow.up")
-                            
-                            VStack(spacing: 8) {
-                                ShareOptionButton(
-                                    icon: "square.and.arrow.up",
-                                    title: "分享此頁面",
-                                    subtitle: "分享當前網頁連結"
-                                ) {
-                                    dismiss()
-                                    showShareSheet = true
-                                }
-                                
-                                ShareOptionButton(
-                                    icon: "doc.on.doc",
-                                    title: "複製連結",
-                                    subtitle: "複製當前頁面網址到剪貼板"
-                                ) {
-                                    if let currentURL = webView.url {
-                                        UIPasteboard.general.string = currentURL.absoluteString
-                                        // Add haptic feedback
-                                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                                        impactFeedback.impactOccurred()
-                                    }
-                                    dismiss()
-                                }
-                            }
-                        }
-                        
-                        // Navigation Section
+                        // Navigation Section - 移除首頁功能
                         VStack(spacing: 12) {
                             SectionHeader(title: "導航", icon: "location")
                             
@@ -285,6 +238,8 @@ struct ShareOptionsView: View {
                                     dismiss()
                                 }
                                 
+                                // ▼ 移除回到首頁功能
+                                /*
                                 ShareOptionButton(
                                     icon: "house",
                                     title: "回到首頁",
@@ -294,11 +249,12 @@ struct ShareOptionsView: View {
                                     webView.load(homeRequest)
                                     dismiss()
                                 }
+                                */
                                 
                                 ShareOptionButton(
                                     icon: "link",
-                                    title: "更改網址",
-                                    subtitle: "導航到新的網址"
+                                    title: "前往新頁面",
+                                    subtitle: "輸入新的網站位置"
                                 ) {
                                     dismiss()
                                     showingURLPrompt = true
@@ -362,13 +318,14 @@ struct ShareOptionsView: View {
         dataStore.removeData(ofTypes: types, modifiedSince: Date.distantPast) {
             DispatchQueue.main.async {
                 isLoading = false
-                let homeRequest = URLRequest(url: url)
-                webView.load(homeRequest)
+                // ▼ 修改：清除資料後重新載入當前頁面，而不是返回首頁
+                webView.reload()
                 dismiss()
             }
         }
     }
 }
+
 
 // Section Header Component
 struct SectionHeader: View {
