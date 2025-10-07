@@ -19,7 +19,7 @@ MusicAI Webview iOS is an iOS application built in Swift that provides a web-bas
 3. **Build and run on your device or simulator.**
 
 ## Screenshot
-<p align="center">
+<p align="right">
   <img src="https://i.meee.com.tw/SgoE3Ql.png" alt="MusicAI Screenshot 1" height="390"/>
   <img src="https://i.meee.com.tw/En8vskJ.png" alt="MusicAI Screenshot 2" height="390"/>
 </p>
