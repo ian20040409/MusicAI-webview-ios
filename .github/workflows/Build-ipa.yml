@@ -1,0 +1,73 @@
+name: Build iOS 26 Unsigned IPA (MusicAI)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15   # 或 macos-latest，確保支援 Xcode 26 / iOS 26 SDK
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 使用最新 Xcode 26
+      - name: Setup Xcode 26
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.0"
+
+      # 顯示目前 Xcode、SDK 資訊
+      - name: Show Xcode and SDK info
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          xcodebuild -showsdks
+
+      # 顯示可用的 Schemes（debug 用）
+      - name: List available schemes
+        run: |
+          xcodebuild -list -project "MusicAI.xcodeproj"
+
+      # 編譯 unsigned xcarchive
+      - name: Build unsigned xcarchive
+        run: |
+          xcodebuild archive \
+            -project "MusicAI.xcodeproj" \
+            -scheme "MusicAI" \
+            -configuration Release \
+            -archivePath build/MusicAI.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            OTHER_CODE_SIGN_FLAGS="" \
+            IPHONEOS_DEPLOYMENT_TARGET=26.0
+
+      # 將 .app 打包成 unsigned .ipa
+      - name: Package unsigned IPA
+        run: |
+          APP_NAME="MusicAI"
+          ARCHIVE_PATH="build/MusicAI.xcarchive"
+          OUTPUT_DIR="build"
+          mkdir -p "${OUTPUT_DIR}/Payload"
+          cp -r "${ARCHIVE_PATH}/Products/Applications/${APP_NAME}.app" "${OUTPUT_DIR}/Payload/"
+          cd "${OUTPUT_DIR}"
+          zip -r "${APP_NAME}-unsigned.ipa" Payload
+          cd -
+
+      # 上傳 unsigned ipa
+      - name: Upload unsigned IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: musicai-unsigned-ipa
+          path: build/*.ipa
+
+      # 上傳 xcarchive (方便離線分析或重新簽名)
+      - name: Upload xcarchive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: musicai-xcarchive
+          path: build/MusicAI.xcarchive
