@@ -1,7 +1,5 @@
 # MusicAI Webview iOS
 
-![MusicAI Screenshot](image1)
-
 MusicAI Webview iOS is an iOS application built in Swift that provides a web-based interface for the MusicAI platform. The app offers a simple and intuitive user experience to access MusicAI chat and related features directly from your iPhone.
 
 ## Features
@@ -22,7 +20,6 @@ MusicAI Webview iOS is an iOS application built in Swift that provides a web-bas
 
 ## Screenshot
 
-The image above shows the main entry screen, with options to enter chat or launch another app. The interface is simple, focused, and user-friendly.
 
 ## License
 
