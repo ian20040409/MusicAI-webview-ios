@@ -20,6 +20,9 @@ MusicAI Webview iOS is an iOS application built in Swift that provides a web-bas
 
 ## Screenshot
 <img src="https://i.meee.com.tw/SgoE3Ql.png" alt="MusicAI Screenshot" width="300"/>
+<img src="https://i.meee.com.tw/En8vskJ.png" alt="MusicAI Screenshot" width="300"/>
+
+
 
 ## License
 
