@@ -11,7 +11,10 @@ MusicAI Webview iOS is an iOS application built in Swift that provides a web-bas
 - **Liquid Glass:** Built following the latest iOS 26 design principles.
 
 ## Getting Started
-
+> [!NOTE]
+> Build IPA using GitHub Actions
+> 1. Fork this repository using the fork button on the top right
+> 2. On your forked repository, go to **Repository Settings** > **Actions**, enable **Read and Write** permissions.
 1. **Clone the repository:**
    ```sh
    git clone https://github.com/ian20040409/MusicAI-webview-ios.git
