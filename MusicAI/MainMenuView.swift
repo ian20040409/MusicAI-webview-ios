@@ -6,7 +6,7 @@ struct MainMenuView: View {
     @Environment(\.openURL) private var openURL
     
     // 請將 "yourotherapp://" 替換成您想打開的 App 的 URL Scheme
-    private let otherAppURLScheme = "calshow://"
+    private let otherAppURLScheme = "unitymusicapp1007://"
 
     var body: some View {
         // 使用 NavigationStack 來管理頁面導航
