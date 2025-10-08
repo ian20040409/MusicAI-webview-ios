@@ -42,7 +42,7 @@ struct MainMenuView: View {
                     Button(action: {
                         openOtherApp()
                     }) {
-                        MenuButton(title: "打開另一個 App", icon: "arrow.up.forward.app")
+                        MenuButton(title: "打開樂伴 (UnityApp)", icon: "arrow.up.forward.app")
                     }
                 }
                 .padding()
