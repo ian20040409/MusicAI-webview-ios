@@ -85,22 +85,26 @@ struct WebViewContainerView: View {
         .toolbar {
             // ▼ 新增：在左上角加入自訂的選單按鈕
             
-            ToolbarItem(placement: .navigationBarLeading) {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
                     // 呼叫 dismiss 來返回主選單
                     dismiss()
                 }) {
-                    Image(systemName: "rectangle.portrait.and.arrow.right").padding(5)
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .padding(5)
+                        
                        
                 }
             }
                 
-            ToolbarItem(placement: .automatic) {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 
                 Button(action: {
                     showingShareOptions = true
                 }) {
-                    Image(systemName: "filemenu.and.pointer.arrow").padding(5)
+                    Image(systemName: "filemenu.and.pointer.arrow")
+                        .padding(5)
+                        
                 }
             }
             
