@@ -48,8 +48,10 @@ struct MainMenuView: View {
                 .padding()
             }
             .navigationTitle("主選單")
+            .statusBarHidden(true)
             .navigationBarHidden(true) // 隱藏導航列標題
         }
+        .statusBarHidden(true)
     }
 
     /// 嘗試打開另一個 App 的 URL Scheme
