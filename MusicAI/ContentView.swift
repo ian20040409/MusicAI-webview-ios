@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import UIKit
 
 // MARK: - WebView 容器視圖
 @MainActor
@@ -42,13 +43,26 @@ struct WebViewContainerView: View {
     @State private var showingURLPrompt = false
     @State private var newURLString = ""
     @State private var showingShareOptions = false
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var themeBaseColor: UIColor = .systemBackground
+    private var safeAreaColor: Color {
+        let adjusted: UIColor
+        if colorScheme == .dark {
+            // 深色模式：顏色深一些（與黑色混合 25%）
+            adjusted = themeBaseColor.blended(with: .black, ratio: 0.25)
+        } else {
+            // 淺色模式：顏色淡一些（與白色混合 70%）
+            adjusted = themeBaseColor.blended(with: .white, ratio: 0.7)
+        }
+        return Color(uiColor: adjusted)
+    }
     
     let url = URL(string: "https://3deaba1531ad.ngrok-free.app/")!
     
     var body: some View {
         ZStack {
-            // 將背景改回黑色，或任何您喜歡的顏色
-            Color.black.ignoresSafeArea()
+            // 以網頁主題色套用 SafeArea（淺色模式較淡、深色模式較深）
+            safeAreaColor.ignoresSafeArea()
             
             WebView(webView: webView)
                 .onAppear {
@@ -57,6 +71,13 @@ struct WebViewContainerView: View {
                 }
                 // 移除邊距和圓角，並確保忽略所有安全區域
                 .ignoresSafeArea()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .webThemeColor)) { note in
+            if let hex = note.object as? String, let ui = UIColor(hex: hex) {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    themeBaseColor = ui
+                }
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         // ▼ 新增：隱藏系統預設的返回按鈕
@@ -147,11 +168,16 @@ struct WebView: UIViewRepresentable {
 
         // 當網頁內容載入完成時，這個方法會被呼叫
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            // 設定要向上捲動的距離，您可以根據需求調整這個數值
-           
+            // 讀取 <meta name="theme-color"> 並廣播十六進位色碼（若存在）
+            let js = "document.querySelector('meta[name=\\\"theme-color\\\"]')?.getAttribute('content')"
+            webView.evaluateJavaScript(js) { result, _ in
+                if let colorString = result as? String {
+                    NotificationCenter.default.post(name: .webThemeColor, object: colorString)
+                }
+            }
+
+            // 保留輕微向上捲動（可視需要調整或移除）
             let scrollPoint = CGPoint(x: 0, y: 20)
-            
-            // 使用動畫讓捲動看起來更平滑
             webView.scrollView.setContentOffset(scrollPoint, animated: true)
         }
     }
@@ -415,6 +441,48 @@ struct ShareOptionButton: View {
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(LiquidGlassButtonStyle())
+    }
+}
+
+
+// MARK: - Theme Color Helpers
+extension Notification.Name {
+    static let webThemeColor = Notification.Name("webThemeColor")
+}
+
+extension UIColor {
+    /// 支援 #RRGGBB 或 #RRGGBBAA（可包含 # 或不含）
+    convenience init?(hex: String) {
+        var hexString = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if hexString.hasPrefix("#") { hexString.removeFirst() }
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 1
+        var hexValue: UInt64 = 0
+        guard Scanner(string: hexString).scanHexInt64(&hexValue) else { return nil }
+        if hexString.count == 6 {
+            r = CGFloat((hexValue & 0xFF0000) >> 16) / 255.0
+            g = CGFloat((hexValue & 0x00FF00) >> 8) / 255.0
+            b = CGFloat((hexValue & 0x0000FF) >> 0) / 255.0
+        } else if hexString.count == 8 {
+            r = CGFloat((hexValue & 0xFF000000) >> 24) / 255.0
+            g = CGFloat((hexValue & 0x00FF0000) >> 16) / 255.0
+            b = CGFloat((hexValue & 0x0000FF00) >> 8) / 255.0
+            a = CGFloat((hexValue & 0x000000FF) >> 0) / 255.0
+        } else {
+            return nil
+        }
+        self.init(red: r, green: g, blue: b, alpha: a)
+    }
+
+    /// 與另一顏色混合，ratio 範圍 0~1，表示要混入目標顏色的比例
+    func blended(with color: UIColor, ratio: CGFloat) -> UIColor {
+        let r1 = CIColor(color: self)
+        let r2 = CIColor(color: color)
+        let t = max(0, min(1, ratio))
+        let r = r1.red   * (1 - t) + r2.red   * t
+        let g = r1.green * (1 - t) + r2.green * t
+        let b = r1.blue  * (1 - t) + r2.blue  * t
+        let a = r1.alpha * (1 - t) + r2.alpha * t
+        return UIColor(red: r, green: g, blue: b, alpha: a)
     }
 }
 
