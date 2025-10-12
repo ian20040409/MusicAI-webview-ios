@@ -69,7 +69,7 @@ struct WebViewContainerView: View {
                     // 呼叫 dismiss 來返回主選單
                     dismiss()
                 }) {
-                    Image(systemName: "chevron.backward")
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
                 }
             }
                 
