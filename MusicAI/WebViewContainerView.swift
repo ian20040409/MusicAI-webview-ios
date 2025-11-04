@@ -12,11 +12,13 @@ struct WebViewContainerView: View {
         let config = WKWebViewConfiguration()
         HTTPCookieStorage.shared.cookieAcceptPolicy = .always
         
+        // Ensure cookies are persisted and not ephemeral
+        config.websiteDataStore = WKWebsiteDataStore.default()
+        
         let webpagePrefs = WKWebpagePreferences()
         webpagePrefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = webpagePrefs
         config.allowsInlineMediaPlayback = true
-        config.websiteDataStore = WKWebsiteDataStore.default()
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
         config.userContentController = WKUserContentController()
        
@@ -36,6 +38,14 @@ struct WebViewContainerView: View {
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
+        
+        // Preload shared cookies into WKWebView's cookie store
+        let cookieStore = config.websiteDataStore.httpCookieStore
+        let sharedCookies = HTTPCookieStorage.shared.cookies ?? []
+        for cookie in sharedCookies {
+            cookieStore.setCookie(cookie)
+        }
+        
         return webView
     }()
     
@@ -57,6 +67,54 @@ struct WebViewContainerView: View {
         return Color(uiColor: adjusted)
     }
     
+    // MARK: - Third-Party Cookies Helpers
+    // Create a third‑party cookie (Secure recommended for SameSite=None)
+    private func makeThirdPartyCookie(name: String, value: String, domain: String, path: String = "/", expires: Date? = nil) -> HTTPCookie? {
+        var properties: [HTTPCookiePropertyKey: Any] = [
+            .name: name,
+            .value: value,
+            .domain: domain, // e.g. ".example.com" to include subdomains
+            .path: path,
+            .secure: "TRUE"
+        ]
+        if let expires { properties[.expires] = expires }
+        return HTTPCookie(properties: properties)
+    }
+
+    @MainActor
+    private func setThirdPartyCookies(_ cookies: [HTTPCookie]) async {
+        let store = webView.configuration.websiteDataStore.httpCookieStore
+        await withCheckedContinuation { continuation in
+            let group = DispatchGroup()
+            for cookie in cookies {
+                group.enter()
+                store.setCookie(cookie) {
+                    group.leave()
+                }
+            }
+            group.notify(queue: .main) {
+                continuation.resume()
+            }
+        }
+    }
+    
+    // Sync cookies from shared storage into WKWebView and build a cookie-aware URLRequest
+    private func makeCookieAwareRequest(for url: URL) -> URLRequest {
+        // Push shared cookies into WKWebView's store
+        let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
+        let sharedCookies = HTTPCookieStorage.shared.cookies(for: url) ?? HTTPCookieStorage.shared.cookies ?? []
+        for cookie in sharedCookies {
+            cookieStore.setCookie(cookie)
+        }
+        // Build request with Cookie header for first load if needed
+        var request = URLRequest(url: url)
+        if !sharedCookies.isEmpty {
+            let cookieHeader = sharedCookies.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
+            request.addValue(cookieHeader, forHTTPHeaderField: "Cookie")
+        }
+        return request
+    }
+    
     let url = AppURLs.home
     
     var body: some View {
@@ -66,8 +124,18 @@ struct WebViewContainerView: View {
             
             WebView(webView: webView)
                 .onAppear {
-                    let request = URLRequest(url: url)
-                    webView.load(request)
+                    Task { @MainActor in
+                        // Set any third‑party cookies you require before loading content
+                        // Example placeholder (replace with your domains/values or remove if not needed)
+                        var thirdPartyCookies: [HTTPCookie] = []
+                        if let c = makeThirdPartyCookie(name: "tp_session", value: "example_value", domain: ".thirdparty.example.com") {
+                            thirdPartyCookies.append(c)
+                        }
+                        await setThirdPartyCookies(thirdPartyCookies)
+
+                        let request = makeCookieAwareRequest(for: url)
+                        webView.load(request)
+                    }
                 }
                 // 移除邊距和圓角，並確保忽略所有安全區域
                 .ignoresSafeArea()
@@ -119,8 +187,11 @@ struct WebViewContainerView: View {
             Button("取消") { }
             Button("確定") {
                 if let newURL = URL(string: newURLString) {
-                    let request = URLRequest(url: newURL)
-                    webView.load(request)
+                    Task { @MainActor in
+                        // Optionally set/update third‑party cookies for the new URL context
+                        let request = makeCookieAwareRequest(for: newURL)
+                        webView.load(request)
+                    }
                 }
             
             }
@@ -253,22 +324,30 @@ struct ShareOptionsView: View {
                                     title: "重新載入",
                                     subtitle: "重新載入當前頁面"
                                 ) {
+                                    // Ensure cookies are synced before reload
+                                    let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
+                                    let currentURL = webView.url
+                                    let sharedCookies = (currentURL.flatMap { HTTPCookieStorage.shared.cookies(for: $0) } ?? HTTPCookieStorage.shared.cookies) ?? []
+                                    for cookie in sharedCookies {
+                                        cookieStore.setCookie(cookie)
+                                    }
                                     webView.reload()
                                     dismiss()
                                 }
                                 
-                                // ▼ 移除回到首頁功能
-                                /*
+                                //
+                                
                                 ShareOptionButton(
-                                    icon: "house",
-                                    title: "回到首頁",
-                                    subtitle: "返回到主頁面"
+                                    icon: "memories.slash",
+                                    title: "重設",
+                                    subtitle: "⚠"
                                 ) {
-                                    let homeRequest = URLRequest(url: url)
-                                    webView.load(homeRequest)
+                                   
+                                    let request = URLRequest(url: url)
+                                    webView.load(request)
                                     dismiss()
                                 }
-                                */
+                                
                                 
                                 ShareOptionButton(
                                     icon: "link",

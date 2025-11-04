@@ -54,7 +54,7 @@ struct MainMenuView: View {
 
                     // 導航到 WebView 的按鈕
                     NavigationLink(destination: WebViewContainerView()) {
-                        MenuButton(title: "進入Chat", icon: "sparkles")
+                        MenuButton(title: "進入Ai Chatbot", icon: "sparkles")
                     }
                     .buttonStyle(PressableButtonStyle())
                     .simultaneousGesture(TapGesture().onEnded {
