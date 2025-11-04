@@ -57,7 +57,7 @@ struct WebViewContainerView: View {
         return Color(uiColor: adjusted)
     }
     
-    let url = URL(string: "https://3deaba1531ad.ngrok-free.app/")!
+    let url = AppURLs.home
     
     var body: some View {
         ZStack {
@@ -80,23 +80,10 @@ struct WebViewContainerView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        // ▼ 新增：隱藏系統預設的返回按鈕
-        .navigationBarBackButtonHidden(true)
+        // ▼ 修改：顯示系統預設的返回按鈕 (改為 false)
+        .navigationBarBackButtonHidden(false)
         .toolbar {
-            // ▼ 新增：在左上角加入自訂的選單按鈕
-            
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    // 呼叫 dismiss 來返回主選單
-                    dismiss()
-                }) {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                        .padding(5)
-                        
-                       
-                }
-            }
-                
+            // ▼ 保留其他 ToolbarItems，移除返回主選單按鈕
             ToolbarItem(placement: .navigationBarTrailing) {
                 
                 Button(action: {
@@ -116,6 +103,7 @@ struct WebViewContainerView: View {
             }
         }
         .sheet(isPresented: $showingShareOptions) {
+            
             ShareOptionsView(
                 showShareSheet: $showShareSheet,
                 showingURLPrompt: $showingURLPrompt,
@@ -227,11 +215,11 @@ struct ShareOptionsView: View {
                     VStack(spacing: 12) {
                         // Icon and title
                         HStack {
-                            Image(systemName: "safari")
+                            Image(systemName: "filemenu.and.pointer.arrow")
                                 .font(.title2)
                                 .foregroundColor(.accentColor)
                             
-                            Text("瀏覽器選項")
+                            Text("選項")
                                 .font(.title2)
                                 .fontWeight(.semibold)
                         }
@@ -313,7 +301,16 @@ struct ShareOptionsView: View {
                 }
                 .padding(.vertical, 20)
             }
-            .background(.regularMaterial)
+            .background(
+                ZStack {
+                    Color.clear
+                    .background(.ultraThinMaterial, in: .rect(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color.white.opacity(0.03))
+                    )
+                }
+            )
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -442,7 +439,20 @@ struct ShareOptionButton: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
-            .background(.ultraThinMaterial, in: .rect(cornerRadius: 16, style: .continuous))
+            .background(
+                ZStack {
+                    Color.clear
+                    .background(.ultraThinMaterial, in: .rect(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color.white.opacity(0.04))
+                    )
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
+            )
         }
         .buttonStyle(LiquidGlassButtonStyle())
     }

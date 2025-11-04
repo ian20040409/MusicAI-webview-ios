@@ -1,4 +1,23 @@
 import SwiftUI
+import UIKit
+
+// MARK: - Haptics Helper & Button Style
+struct Haptics {
+    static func lightImpact() { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+    static func mediumImpact() { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
+    static func heavyImpact() { UIImpactFeedbackGenerator(style: .heavy).impactOccurred() }
+    static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+    static func warning() { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
+    static func error() { UINotificationFeedbackGenerator().notificationOccurred(.error) }
+}
+
+struct PressableButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
 
 // MARK: - 主選單視圖 (App 進入點)
 struct MainMenuView: View {
@@ -37,13 +56,19 @@ struct MainMenuView: View {
                     NavigationLink(destination: WebViewContainerView()) {
                         MenuButton(title: "進入Chat", icon: "sparkles")
                     }
+                    .buttonStyle(PressableButtonStyle())
+                    .simultaneousGesture(TapGesture().onEnded {
+                        Haptics.mediumImpact()
+                    })
                     
                     // 打開另一個 App 的按鈕
                     Button(action: {
+                        Haptics.success()
                         openOtherApp()
                     }) {
                         MenuButton(title: "打開樂伴 (UnityApp)", icon: "arrow.up.forward.app")
                     }
+                    .buttonStyle(PressableButtonStyle())
                 }
                 .padding()
             }
@@ -114,3 +139,4 @@ class HostingController: UIHostingController<MainMenuView> { // 改為指向 Mai
     }
 }
 #endif
+
