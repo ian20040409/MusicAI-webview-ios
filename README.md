@@ -22,33 +22,32 @@ MusicAI Webview iOS is an iOS application built in Swift that provides a web-bas
 2. **Open the project in Xcode.**
 3. **Build and run on your device or simulator.**
 
-## 使用 GitHub Actions 建置並發佈 (Build with GitHub Actions)
+## Build and Release with GitHub Actions
 
-> **注意**
-> 
-> 如果這是你第一次使用，請先完成下列步驟：
-> 1. 使用右上角的 **Fork** 按鈕 fork 此專案至你的帳號。
-> 2. 前往你 fork 後的 repository：**Settings → Actions**，將 **Workflow permissions** 設為 **Read and write**（允許寫入），否則無法建立 Release。
+> **Note**
+>
+> If this is your first time, please complete the following steps before you start:
+> 1. Fork this repository using the **Fork** button in the top-right corner.
+> 2. In your forked repository go to **Settings → Actions**, and set **Workflow permissions** to **Read and write** (required for creating Releases).
 
-### 如何使用 GitHub Actions 建置 MusicAI（產生 unsigned .ipa 並建立 Release）
+### How to build the MusicAI app using GitHub Actions (unsigned .ipa + Release)
 
-1. 在你的 fork 中按 **Sync fork**（若分支落後，點 **Update branch** 以同步）。
-2. 進入 **Actions** 分頁，選擇 `Build iOS 26 Unsigned IPA (MusicAI) and Release` 工作流程（workflow）。
-3. 點右側的 **Run workflow** 按鈕。你需要填入：
-   - `tag`：要為 release 使用的 tag（例如 `v1.0.0`）。
-   - `draft`：是否以草稿方式建立 Release（預設為 `true`）。
-4. 點 **Run workflow** 開始。Actions 會在 macOS runner 上執行以下動作：
-   - 編譯產生 unsigned `.xcarchive`，將 `.app` 打包為 unsigned `.ipa`，並把二者上傳為 artifact。
-   - 若是以 tag 觸發（push tag），或以 `workflow_dispatch` 並提供 `tag`，流程會建立一個 GitHub Release 並將 `MusicAI-unsigned.ipa` 上傳為 Release asset。
-5. 等待流程完成後，前往你的 fork 的 **Releases** 頁面下載 `.ipa`（若看不到 Releases，可在倉庫 URL 後加上 `/releases`，例如 `https://github.com/yourname/MusicAI-webview-ios/releases`）。
+1. Sync your fork. If your branch is out-of-date, click **Update branch** to bring it up to date.
+2. Open the **Actions** tab in your forked repository and select the `Build iOS 26 Unsigned IPA (MusicAI) and Release` workflow.
+3. Click the **Run workflow** button on the right and provide the required inputs:
+   - `tag`: Tag to use for the release (e.g., `v1.0.0`).
+   - `draft`: Create the release as a draft? (`true` or `false`, default: `true`).
+4. Click **Run workflow** to start. The workflow will run on a macOS runner and perform the following:
+   - Build an unsigned `.xcarchive`, package the `.app` into an unsigned `.ipa`, and upload both as artifacts.
+   - If triggered by a tag push, or when running via `workflow_dispatch` with a `tag` value, the workflow will create a GitHub Release and upload `MusicAI-unsigned.ipa` as the release asset.
+5. After the run completes, download the `.ipa` from the **Releases** page of your forked repository. If Releases are not visible, append `/releases` to your repo URL (for example `https://github.com/yourname/MusicAI-webview-ios/releases`).
 
-### 常見問題與注意事項
+### Troubleshooting & Notes
 
-- 如果你希望上傳 `xcarchive` 作為下載項，建議在 build job 先將 `xcarchive` 壓縮為單一 `.zip` 檔，再上傳（避免將 archive 裡的多個內部檔案逐一當成 release asset 上傳，造成 404 錯誤）。
-- 若想產生 signed（已簽名）的 IPA，需要在 repository secrets 中設定簽名憑證（P12）與密碼，並在 workflow 中加入簽名步驟（此流程未包含自動簽名）。
-- 若 workflow 找不到產物或上傳失敗，可在 Actions 的 build job 中檢查 `Upload artifact` 步驟輸出，以及 release job 的 `List files to upload` 列表來排查問題。
+- If you want to attach the entire `xcarchive` to the Release, zip the archive in the build job (`zip -r musicai-xcarchive.zip build/MusicAI.xcarchive`) and upload the single `.zip` file. Uploading the raw archive folder may cause the release action to attempt to upload internal files (Info.plist, Assets.car, etc.), which can fail with 404.
+- Creating a signed IPA requires adding signing certificates (P12) and passwords to repository secrets and adding a signing step to the workflow; this workflow does not perform automatic signing.
+- If the workflow cannot find artifacts or upload fails, inspect the `Upload artifact` step output in the build job and the `List files to upload` output in the release job to debug the problem.
 
-*如果你要我幫你把 README 中的範例文字改為英文版本或加入範例截圖說明，我可以直接替你修改。*
 
 ## Screenshot
 <p align="left">
