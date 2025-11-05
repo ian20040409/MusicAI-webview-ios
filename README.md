@@ -9,7 +9,7 @@ MusicAI Webview iOS is an iOS application built in Swift that provides a web-bas
 - **App Linking:** Quickly open related apps or resources from within MusicAI Webview.
 - **100% Swift:** All code is written entirely in Swift for the best performance and compatibility with iOS.
 - **Liquid Glass:** Built following the latest iOS 26 design principles.
-- **Client User-Agent**
+- **Client User-Agent:** This identifier is required by the backend to allow access to protected routes.
 
 ## Getting Started
 > [!NOTE]
