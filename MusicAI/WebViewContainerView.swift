@@ -21,6 +21,9 @@ struct WebViewContainerView: View {
         config.allowsInlineMediaPlayback = true
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
         config.userContentController = WKUserContentController()
+
+        // Append app name to default UA as a fallback (will be ignored if customUserAgent is set)
+        config.applicationNameForUserAgent = "lnu"
        
         let zoomDisableScript = """
         var meta = document.createElement('meta');
@@ -34,6 +37,9 @@ struct WebViewContainerView: View {
         config.userContentController.addUserScript(userScript)
        
         let webView = WKWebView(frame: .zero, configuration: config)
+        // Set a custom, non-standard User-Agent to bypass ngrok browser warning
+        // Note: This replaces the default Safari UA; adjust if some sites depend on it.
+        webView.customUserAgent = "MusicAI/1.0 (lnu)"
         // 讓 WebView 背景透明
         webView.isOpaque = false
         webView.backgroundColor = .clear
@@ -65,6 +71,38 @@ struct WebViewContainerView: View {
             adjusted = themeBaseColor.blended(with: .white, ratio: 0.7)
         }
         return Color(uiColor: adjusted)
+    }
+
+    // MARK: - Toolbar helpers / state
+    @State private var isNavigatingHome = false
+
+    /// 簡單的觸覺反饋（在 toolbar 按鈕被點擊時呼叫）
+    private func hapticTap() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.prepare()
+        generator.impactOccurred()
+    }
+
+    /// 可靠地導回首頁（會先同步 cookie、停止當前載入，再載入首頁）
+    @MainActor
+    private func navigateHome() async {
+        guard !isNavigatingHome else { return }
+        isNavigatingHome = true
+        defer { isNavigatingHome = false }
+
+        // 停掉目前載入，避免 race condition
+        webView.stopLoading()
+
+        // 確保 homepage 的 cookies 已同步到 webView 的 cookieStore
+        let homeURL = AppURLs.home
+        let sharedCookies = HTTPCookieStorage.shared.cookies(for: homeURL) ?? HTTPCookieStorage.shared.cookies ?? []
+        if !sharedCookies.isEmpty {
+            await setThirdPartyCookies(sharedCookies)
+        }
+
+        // 使用 cookie-aware request 進行載入
+        let request = makeCookieAwareRequest(for: homeURL)
+        webView.load(request)
     }
     
     // MARK: - Third-Party Cookies Helpers
@@ -151,19 +189,36 @@ struct WebViewContainerView: View {
         // ▼ 修改：顯示系統預設的返回按鈕 (改為 false)
         .navigationBarBackButtonHidden(false)
         .toolbar {
-            // ▼ 保留其他 ToolbarItems，移除返回主選單按鈕
-            ToolbarItem(placement: .navigationBarTrailing) {
-                
+            // Leading: 回到主畫面（Home）按鈕 — 使用 navigateHome() 確保 cookie 與載入一致性
+            ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: {
+                    hapticTap()
+                    Task { @MainActor in
+                        await navigateHome()
+                    }
+                }) {
+                    if isNavigatingHome {
+                        // 顯示 loading 狀態以回饋使用者
+                        ProgressView()
+                            .frame(width: 28, height: 28)
+                    } else {
+                        Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                            .padding(5)
+                    }
+                }
+                .disabled(isNavigatingHome)
+            }
+
+            // Trailing: 分享 / 選單 按鈕（保留原本的 share options，但加入 haptic）
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    hapticTap()
                     showingShareOptions = true
                 }) {
                     Image(systemName: "filemenu.and.pointer.arrow")
                         .padding(5)
-                        
                 }
             }
-            
-            
         }
         .sheet(isPresented: $showShareSheet) {
             if let shareURL = webView.url {
