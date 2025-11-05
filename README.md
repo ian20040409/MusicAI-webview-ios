@@ -49,7 +49,7 @@ MusicAI Webview iOS is an iOS application built in Swift that provides a web-bas
 - If the workflow cannot find artifacts or upload fails, inspect the `Upload artifact` step output in the build job and the `List files to upload` output in the release job to debug the problem.
 
 
-## Screenshot
+## Screenshots
 <p align="left">
   <img src="https://i.meee.com.tw/SgoE3Ql.png" alt="MusicAI Screenshot 1" height="590"/>
   <img src="https://i.meee.com.tw/En8vskJ.png" alt="MusicAI Screenshot 2" height="590"/>
