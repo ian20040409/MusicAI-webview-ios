@@ -1,10 +1,26 @@
-name: Build iOS 26 Unsigned IPA (MusicAI)
+name: Build iOS 26 Unsigned IPA (MusicAI) and Release
+
+permissions:
+  contents: write
 
 on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
+      - 'release-*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., v1.1.0)'
+        required: true
+        type: string
+      draft:
+        description: 'Create as draft'
+        required: true
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -71,3 +87,33 @@ jobs:
         with:
           name: musicai-xcarchive
           path: build/MusicAI.xcarchive
+
+  release:
+    name: Publish Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+
+      - name: List files to upload
+        run: |
+          echo "Files in release/:"
+          find release -type f -print || true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || github.event.inputs.tag }}
+          name: Release ${{ github.ref_type == 'tag' && github.ref_name || github.event.inputs.tag }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            release/musicai-unsigned-ipa/*.ipa
+            release/musicai-xcarchive/**
+          draft: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.draft || false }}
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
