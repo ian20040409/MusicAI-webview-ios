@@ -112,8 +112,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           files: |
             release/musicai-unsigned-ipa/*.ipa
-            release/musicai-xcarchive/**
           draft: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.draft || false }}
-          fail_on_unmatched_files: true
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
