@@ -1,13 +1,11 @@
 import Foundation
 
 public enum AppURLs {
-    // Set your default/home URL here
-    public static let home: URL = {
-        // Replace with your desired URL string
-        let string = "https://linyounttu.dpdns.org/"
-        guard let url = URL(string: string) else {
-            preconditionFailure("Invalid URL: \(string)")
-        }
-        return url
-    }()
+    /// 預設 fallback 網址（遠端設定取不到時使用）
+    public static let fallback = URL(string: "https://linyounttu.dpdns.org/")!
+
+    /// 實際使用中的首頁網址（會被遠端覆蓋）
+    public static var home: URL {
+        RemoteConfig.shared.currentHomeURL ?? fallback
+    }
 }

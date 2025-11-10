@@ -13,6 +13,10 @@ struct MusicAIApp: App {
         WindowGroup {
             //ContentView()
             MainMenuView()
+            .onAppear {
+                    RemoteConfig.shared.fetchConfig()
+                }
+            
         }
     }
 }

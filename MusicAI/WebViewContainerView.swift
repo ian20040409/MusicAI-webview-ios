@@ -175,6 +175,11 @@ struct WebViewContainerView: View {
                         webView.load(request)
                     }
                 }
+                .onReceive(NotificationCenter.default.publisher(for: RemoteConfig.didUpdateNotification)) { _ in
+                    Task { @MainActor in
+                        await navigateHome()
+                    }
+                }
                 // 移除邊距和圓角，並確保忽略所有安全區域
                 .ignoresSafeArea()
         }
@@ -596,6 +601,7 @@ struct ShareOptionButton: View {
 // MARK: - Theme Color Helpers
 extension Notification.Name {
     static let webThemeColor = Notification.Name("webThemeColor")
+    static let remoteConfigDidUpdate = Notification.Name("remoteConfigDidUpdate")
 }
 
 extension UIColor {
