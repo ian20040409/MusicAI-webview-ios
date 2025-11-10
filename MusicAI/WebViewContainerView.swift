@@ -85,7 +85,7 @@ struct WebViewContainerView: View {
 
     /// 可靠地導回首頁（會先同步 cookie、停止當前載入，再載入首頁）
     @MainActor
-    private func navigateHome() async {
+    private func navigateHome(forceReload: Bool = false) async {
         guard !isNavigatingHome else { return }
         isNavigatingHome = true
         defer { isNavigatingHome = false }
@@ -102,7 +102,12 @@ struct WebViewContainerView: View {
 
         // 使用 cookie-aware request 進行載入
         let request = makeCookieAwareRequest(for: homeURL)
-        webView.load(request)
+        if forceReload, let current = webView.url, current.absoluteString == homeURL.absoluteString {
+            // 同一網址但仍要強制刷新（忽略快取）
+            webView.reloadFromOrigin()
+        } else {
+            webView.load(request)
+        }
     }
     
     // MARK: - Third-Party Cookies Helpers
@@ -177,7 +182,13 @@ struct WebViewContainerView: View {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: RemoteConfig.didUpdateNotification)) { _ in
                     Task { @MainActor in
-                        await navigateHome()
+                        let newHome = AppURLs.home
+                        if let current = webView.url, current.absoluteString == newHome.absoluteString {
+                            // 版本改變但網址相同 → 立即強制刷新
+                            await navigateHome(forceReload: true)
+                        } else {
+                            await navigateHome()
+                        }
                     }
                 }
                 // 移除邊距和圓角，並確保忽略所有安全區域
@@ -199,7 +210,7 @@ struct WebViewContainerView: View {
                 Button(action: {
                     hapticTap()
                     Task { @MainActor in
-                        await navigateHome()
+                        await navigateHome(forceReload: false)
                     }
                 }) {
                     if isNavigatingHome {
@@ -402,10 +413,17 @@ struct ShareOptionsView: View {
                                     title: "重設",
                                     subtitle: "⚠"
                                 ) {
+                                    if let current = webView.url, current.absoluteString == url.absoluteString {
+                                            // 網址相同 → 強制重新載入（忽略快取）
+                                            webView.reloadFromOrigin()
+                                        } else {
+                                            // 不同網址 → 正常回首頁
+                                            let request = URLRequest(url: url)
+                                            webView.load(request)
+                                        }
+                                        dismiss()
                                    
-                                    let request = URLRequest(url: url)
-                                    webView.load(request)
-                                    dismiss()
+                                   
                                 }
                                 
                                 
