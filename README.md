@@ -1,6 +1,6 @@
-# MusicAI-Client-ios
+# MusicAI Client iOS
 
-MusicAI-Client-ios is an iOS application built in Swift that provides a web-based interface for the MusicAI platform. The app offers a simple and intuitive user experience to access MusicAI chat and related features directly from your iPhone.
+MusicAI Client is an iOS application built in Swift that provides a web-based interface for the MusicAI platform. The app offers a simple and intuitive user experience to access MusicAI chat and related features directly from your iPhone.
 
 ## Features
 
