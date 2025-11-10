@@ -12,6 +12,10 @@ MusicAI Client is an iOS application built in Swift that provides a web-based in
 - **Client User-Agent:** This identifier is required by the backend to allow access to protected routes.
 - **Remote Configuration:** Fetches the home URL from a remote endpoint, allowing for dynamic updates without requiring an app redeployment. The app automatically navigates to the new home URL when the configuration is updated.
 
+## Download
+
+You can download the latest pre-built version of the app directly from the **[Releases](https://github.com/ian20040409/MusicAI-Client-iOS/releases)** page.
+
 ## Getting Started
 > [!NOTE]
 > Build IPA using GitHub Actions
