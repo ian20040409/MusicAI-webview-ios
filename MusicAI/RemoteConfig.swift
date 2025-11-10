@@ -71,7 +71,7 @@ final class RemoteConfig: ObservableObject {
             DispatchQueue.main.async {
                 self.currentHomeURL = newURL
                 NotificationCenter.default.post(name: RemoteConfig.didUpdateNotification, object: newURL)
-                NotificationManager.notify(title: "􁅦 有新的內容", body: "􀌕 已自動更新")//newURL.absoluteString)
+                NotificationManager.notify(title: "􁅦 有新的內容", body: "􀌕 已自動套用更新\n􁓹 設定已同步")//newURL.absoluteString)
             }
         }.resume()
     }
