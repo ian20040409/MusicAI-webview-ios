@@ -1,12 +1,12 @@
-# MusicAI Webview iOS
+# MusicAI-Client-ios
 
-MusicAI Webview iOS is an iOS application built in Swift that provides a web-based interface for the MusicAI platform. The app offers a simple and intuitive user experience to access MusicAI chat and related features directly from your iPhone.
+MusicAI-Client-ios is an iOS application built in Swift that provides a web-based interface for the MusicAI platform. The app offers a simple and intuitive user experience to access MusicAI chat and related features directly from your iPhone.
 
 ## Features
 
 - **Modern iOS Interface:** Clean and minimalistic UI for seamless navigation (see screenshot above).
-- **Chat Integration:** Easily access MusicAI's chat functionality.
-- **App Linking:** Quickly open related apps or resources from within MusicAI Webview.
+- **Webview Integration:** Easily access MusicAI's chat functionality.
+- **App Linking:** Quickly open related apps or resources from within MusicAI.
 - **100% Swift:** All code is written entirely in Swift for the best performance and compatibility with iOS.
 - **Liquid Glass:** Built following the latest iOS 26 design principles.
 - **Client User-Agent:** This identifier is required by the backend to allow access to protected routes.
@@ -19,7 +19,7 @@ MusicAI Webview iOS is an iOS application built in Swift that provides a web-bas
 > 2. On your forked repository, go to **Repository Settings** > **Actions**, enable **Read and Write** permissions.
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/ian20040409/MusicAI-webview-ios.git
+   git clone https://github.com/ian20040409/MusicAI-Client-ios.git
    ```
 2. **Open the project in Xcode.**
 3. **Build and run on your device or simulator.**
@@ -42,7 +42,7 @@ MusicAI Webview iOS is an iOS application built in Swift that provides a web-bas
 4. Click **Run workflow** to start. The workflow will run on a macOS runner and perform the following:
    - Build an unsigned `.xcarchive`, package the `.app` into an unsigned `.ipa`, and upload both as artifacts.
    - If triggered by a tag push, or when running via `workflow_dispatch` with a `tag` value, the workflow will create a GitHub Release and upload `MusicAI-unsigned.ipa` as the release asset.
-5. After the run completes, download the `.ipa` from the **Releases** page of your forked repository. If Releases are not visible, append `/releases` to your repo URL (for example `https://github.com/yourname/MusicAI-webview-ios/releases`).
+5. After the run completes, download the `.ipa` from the **Releases** page of your forked repository. If Releases are not visible, append `/releases` to your repo URL.
 
 ### Troubleshooting & Notes
 
