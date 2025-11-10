@@ -74,7 +74,7 @@ final class RemoteConfig: ObservableObject {
                 /*
                 SymbolNotificationManager.notifyWithSymbolImage(
                     title: "✨有新的內容✨",
-                    body: "\n✅已部署設定並套用更新",
+                    body: "\n✅已部署設定需重開APP套用更新",
                     symbolName: "gear.badge.checkmark",
                     tintColor: .label
                 )
@@ -82,7 +82,7 @@ final class RemoteConfig: ObservableObject {
                 
                 NotifyOrToast.send(
                     title: "✨有新的內容✨",
-                    body: "✅已部署設定並套用更新",
+                    body: "✅已部署設定需重開APP套用更新",
                     symbolName: "gear.badge.checkmark",
                     
                 )
