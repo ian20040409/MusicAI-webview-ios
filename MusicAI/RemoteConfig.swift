@@ -71,7 +71,12 @@ final class RemoteConfig: ObservableObject {
             DispatchQueue.main.async {
                 self.currentHomeURL = newURL
                 NotificationCenter.default.post(name: RemoteConfig.didUpdateNotification, object: newURL)
-                NotificationManager.notify(title: "􁅦 有新的內容", body: "􀌕 已自動套用更新\n􁓹 設定已同步")//newURL.absoluteString)
+                SymbolNotificationManager.notifyWithSymbolImage(
+                    title: "✨有新的內容✨",
+                    body: "\n✅已部署設定並套用更新",
+                    symbolName: "gear.badge.checkmark",
+                    tintColor: .label
+                )
             }
         }.resume()
     }
