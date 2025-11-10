@@ -14,6 +14,7 @@ struct MusicAIApp: App {
     var body: some Scene {
         WindowGroup {
             MainMenuView()
+                .toastOverlay()
                 .onAppear {
                     NotificationManager.requestAuthorization()
                     RemoteConfig.shared.fetchConfig()
