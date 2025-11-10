@@ -235,7 +235,7 @@ struct WebViewContainerView: View {
                         ProgressView()
                             .frame(width: 28, height: 28)
                     } else {
-                        Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                        Image(systemName: "arrow.clockwise.icloud")
                             .padding(5)
                     }
                 }
