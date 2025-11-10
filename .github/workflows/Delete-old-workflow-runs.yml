@@ -1,11 +1,14 @@
 
 
-
-
-name: Manual cleanup (keep only newest run)
+name: Manual cleanup (keep newest N runs)
 
 on:
-  workflow_dispatch:   # 手動觸發
+  workflow_dispatch:
+    inputs:
+      keep:
+        description: '要保留的最新 run 筆數 (例如 3)'
+        required: true
+        default: '1'
 
 permissions:
   actions: write
@@ -16,27 +19,30 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GH_REPO: ${{ github.repository }}   # 讓 gh 知道目標 repo
+      GH_REPO: ${{ github.repository }}
     steps:
-      - name: Show repo context
+      - name: Delete all runs except the newest N
         run: |
-          echo "Repo: $GH_REPO"
-          echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+          KEEP=${{ github.event.inputs.keep }}
+          echo "🔹 Repository: $GH_REPO"
+          echo "🔹 保留最新 $KEEP 筆，刪除其餘的 workflow runs"
 
-      - name: Delete all runs except the newest (repo-wide)
-        run: |
-          echo "Fetching all workflow runs..."
-          ids=$(gh run list --repo "$GITHUB_REPOSITORY" --limit 1000 \
+          # 取得所有 run IDs（由新到舊排序）
+          ids=$(gh run list --repo "$GH_REPO" --limit 1000 \
             --json databaseId,createdAt \
-            --jq 'sort_by(.createdAt) | reverse | .[1:] | .[].databaseId')
+            --jq "sort_by(.createdAt) | reverse | .[${KEEP}:] | .[].databaseId")
 
           if [ -z "$ids" ]; then
-            echo "✅ No old runs to delete!"
+            echo "✅ 沒有需要刪除的舊 runs"
             exit 0
           fi
 
-          echo "Deleting old workflow runs..."
+          echo "🗑️ 共有 $(echo $ids | wc -w) 筆舊 runs 將被刪除..."
           for id in $ids; do
-            gh run delete "$id" --repo "$GITHUB_REPOSITORY"
+            gh run delete "$id" --repo "$GH_REPO"
           done
-          echo "🧹 Cleanup complete — only the newest run remains."
+
+          echo "✅ 清理完成，只保留最新 $KEEP 筆 runs。"
+
+
+
