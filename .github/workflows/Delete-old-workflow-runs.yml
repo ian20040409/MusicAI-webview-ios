@@ -1,4 +1,7 @@
 
+
+
+
 name: Manual cleanup (keep only newest run)
 
 on:
@@ -13,11 +16,17 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}   # 讓 gh 知道目標 repo
     steps:
+      - name: Show repo context
+        run: |
+          echo "Repo: $GH_REPO"
+          echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+
       - name: Delete all runs except the newest (repo-wide)
         run: |
           echo "Fetching all workflow runs..."
-          ids=$(gh run list --limit 1000 \
+          ids=$(gh run list --repo "$GITHUB_REPOSITORY" --limit 1000 \
             --json databaseId,createdAt \
             --jq 'sort_by(.createdAt) | reverse | .[1:] | .[].databaseId')
 
@@ -28,6 +37,6 @@ jobs:
 
           echo "Deleting old workflow runs..."
           for id in $ids; do
-            gh run delete "$id"
+            gh run delete "$id" --repo "$GITHUB_REPOSITORY"
           done
           echo "🧹 Cleanup complete — only the newest run remains."
