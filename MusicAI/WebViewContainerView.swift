@@ -7,6 +7,7 @@ import UIKit
 struct WebViewContainerView: View {
     // ▼ 新增：取得環境中的 dismiss 動作，用於返回上一頁
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var webView: WKWebView = {
         let config = WKWebViewConfiguration()
@@ -54,6 +55,7 @@ struct WebViewContainerView: View {
         
         return webView
     }()
+    @State private var homeURL: URL = AppURLs.home
     
     @State private var showShareSheet = false
     @State private var showingURLPrompt = false
@@ -94,7 +96,7 @@ struct WebViewContainerView: View {
         webView.stopLoading()
 
         // 確保 homepage 的 cookies 已同步到 webView 的 cookieStore
-        let homeURL = AppURLs.home
+        let homeURL = self.homeURL
         let sharedCookies = HTTPCookieStorage.shared.cookies(for: homeURL) ?? HTTPCookieStorage.shared.cookies ?? []
         if !sharedCookies.isEmpty {
             await setThirdPartyCookies(sharedCookies)
@@ -158,8 +160,6 @@ struct WebViewContainerView: View {
         return request
     }
     
-    let url = AppURLs.home
-    
     var body: some View {
         ZStack {
             // 以網頁主題色套用 SafeArea（淺色模式較淡、深色模式較深）
@@ -167,6 +167,7 @@ struct WebViewContainerView: View {
             
             WebView(webView: webView)
                 .onAppear {
+                    RemoteConfig.shared.fetchConfig()
                     Task { @MainActor in
                         // Set any third‑party cookies you require before loading content
                         // Example placeholder (replace with your domains/values or remove if not needed)
@@ -176,21 +177,37 @@ struct WebViewContainerView: View {
                         }
                         await setThirdPartyCookies(thirdPartyCookies)
 
-                        let request = makeCookieAwareRequest(for: url)
+                        let request = makeCookieAwareRequest(for: homeURL)
                         webView.load(request)
                     }
                 }
-                .onReceive(NotificationCenter.default.publisher(for: RemoteConfig.didUpdateNotification)) { _ in
+                
+                .onReceive(NotificationCenter.default.publisher(for: RemoteConfig.didUpdateNotification)) { note in
                     Task { @MainActor in
-                        let newHome = AppURLs.home
-                        if let current = webView.url, current.absoluteString == newHome.absoluteString {
-                            // 版本改變但網址相同 → 立即強制刷新
-                            await navigateHome(forceReload: true)
+                        // 若通知有附帶新 URL，優先使用
+                        let newHome = (note.object as? URL) ?? AppURLs.home
+                        homeURL = newHome
+
+                        if let current = webView.url {
+                            if current.absoluteString == newHome.absoluteString {
+                                // 同一網址 → 強制從來源刷新（略過快取）
+                                webView.reloadFromOrigin()
+                            } else {
+                                // 不同網址 → 直接載入新網址
+                                let request = makeCookieAwareRequest(for: newHome)
+                                webView.load(request)
+                            }
                         } else {
-                            await navigateHome()
+                            // 首次載入或無網址 → 直接載入新網址
+                            let request = makeCookieAwareRequest(for: newHome)
+                            webView.load(request)
                         }
                     }
                 }
+                
+                
+                
+            
                 // 移除邊距和圓角，並確保忽略所有安全區域
                 .ignoresSafeArea()
         }
@@ -247,7 +264,7 @@ struct WebViewContainerView: View {
                 showShareSheet: $showShareSheet,
                 showingURLPrompt: $showingURLPrompt,
                 webView: webView,
-                url: url
+                url: homeURL
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
@@ -265,6 +282,11 @@ struct WebViewContainerView: View {
                     }
                 }
             
+            }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                RemoteConfig.shared.fetchConfig()
             }
         }
     }
@@ -657,4 +679,3 @@ extension UIColor {
         return UIColor(red: r, green: g, blue: b, alpha: a)
     }
 }
-

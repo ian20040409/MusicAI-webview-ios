@@ -70,6 +70,11 @@ struct MainMenuView: View {
                     }
                     .buttonStyle(PressableButtonStyle())
                 }
+                .onAppear {
+                    // 主畫面出現時自動更新遠端設定（從 Cloudflare Worker 抓 config.json）
+                    print("🔄 正在更新遠端設定...")
+                    RemoteConfig.shared.fetchConfig()
+                }
                 .padding()
             }
             .navigationTitle("主選單")

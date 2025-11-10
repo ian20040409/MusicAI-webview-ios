@@ -52,6 +52,7 @@ final class RemoteConfig: ObservableObject {
                 let urlStr = obj["home_url"] as? String,
                 let newURL = URL(string: urlStr)
             else { return }
+            print("Config JSON:", obj)
 
             let remoteVer = (obj["version"] as? Int) ?? 0
             let localVer  = UserDefaults.standard.integer(forKey: self.kCachedVer)
