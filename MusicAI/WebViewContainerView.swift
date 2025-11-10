@@ -226,17 +226,21 @@ struct WebViewContainerView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: {
                     hapticTap()
+                    // 1) 先抓最新的 Cloudflare Worker 設定
+                    RemoteConfig.shared.fetchConfig()
+
                     Task { @MainActor in
-                        await navigateHome(forceReload: false)
+                        // 2) 稍等一下讓 fetch 完成（簡單穩定做法）
+                        try? await Task.sleep(nanoseconds: 400_000_000) // 0.4s
+
+                        // 3) 回首頁：若網址相同用 reloadFromOrigin，否則 load 新首頁
+                        await navigateHome(forceReload: true)
                     }
                 }) {
                     if isNavigatingHome {
-                        // 顯示 loading 狀態以回饋使用者
-                        ProgressView()
-                            .frame(width: 28, height: 28)
+                        ProgressView().frame(width: 28, height: 28)
                     } else {
-                        Image(systemName: "arrow.clockwise.icloud")
-                            .padding(5)
+                        Image(systemName: "arrow.clockwise.icloud").padding(5)
                     }
                 }
                 .disabled(isNavigatingHome)
