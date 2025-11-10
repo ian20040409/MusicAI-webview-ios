@@ -69,6 +69,23 @@ struct MainMenuView: View {
                         MenuButton(title: "打開樂伴 (UnityApp)", icon: "arrow.up.forward.app")
                     }
                     .buttonStyle(PressableButtonStyle())
+                    /*
+                    #if DEBUG
+                    // 🧪 Debug：測試 Toast 顯示
+                    Button(action: {
+                        Haptics.lightImpact()
+                        ToastCenter.shared.show(
+                            title: "Toast 測試",
+                            message: "這是一則內建 Toast 提示",
+                            symbolName: "sparkles",
+                            
+                        )
+                    }) {
+                        MenuButton(title: "🧪 測試 Toast", icon: "wand.and.stars")
+                    }
+                    .buttonStyle(PressableButtonStyle())
+                    #endif
+                     */
                 }
                 .onAppear {
                     // 主畫面出現時自動更新遠端設定（從 Cloudflare Worker 抓 config.json）
@@ -144,4 +161,3 @@ class HostingController: UIHostingController<MainMenuView> { // 改為指向 Mai
     }
 }
 #endif
-
