@@ -40,7 +40,8 @@ struct WebViewContainerView: View {
         let webView = WKWebView(frame: .zero, configuration: config)
         // Set a custom, non-standard User-Agent to bypass ngrok browser warning
         // Note: This replaces the default Safari UA; adjust if some sites depend on it.
-        webView.customUserAgent = "MusicAI/1.0 (lnu)"
+        let cachedUA = UserDefaults.standard.string(forKey: RemoteConfig.Defaults.cachedUserAgent)
+        webView.customUserAgent = cachedUA ?? RemoteConfig.defaultUserAgent
         // 讓 WebView 背景透明
         webView.isOpaque = false
         webView.backgroundColor = .clear
@@ -56,6 +57,9 @@ struct WebViewContainerView: View {
         return webView
     }()
     @State private var homeURL: URL = AppURLs.home
+    @State private var shareOptionsEnabled = UserDefaults.standard.object(
+        forKey: RemoteConfig.Defaults.remoteShowShareOptions
+    ) as? Bool ?? true
     
     @State private var showShareSheet = false
     @State private var showingURLPrompt = false
@@ -218,9 +222,25 @@ struct WebViewContainerView: View {
                 }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .remoteUIFlagsDidUpdate)) { note in
+            if let showShare = note.userInfo?["show_share_options"] as? Bool {
+                shareOptionsEnabled = showShare
+                if !showShare {
+                    showingShareOptions = false
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .userAgentDidUpdate)) { note in
+            guard let userAgent = note.object as? String else { return }
+            if webView.customUserAgent != userAgent {
+                webView.customUserAgent = userAgent
+                webView.reloadFromOrigin()
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
         // ▼ 修改：顯示系統預設的返回按鈕 (改為 false)
         .navigationBarBackButtonHidden(false)
+        .toolbar(.hidden, for: .tabBar) // Hide tab bar when pushing into WebView
         .toolbar {
             // Leading: 回到主畫面（Home）按鈕 — 使用 navigateHome() 確保 cookie 與載入一致性
             ToolbarItem(placement: .navigationBarLeading) {
@@ -247,13 +267,15 @@ struct WebViewContainerView: View {
             }
 
             // Trailing: 分享 / 選單 按鈕（保留原本的 share options，但加入 haptic）
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    hapticTap()
-                    showingShareOptions = true
-                }) {
-                    Image(systemName: "filemenu.and.pointer.arrow")
-                        .padding(5)
+            if shareOptionsEnabled {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        hapticTap()
+                        showingShareOptions = true
+                    }) {
+                        Image(systemName: "filemenu.and.pointer.arrow")
+                            .padding(5)
+                    }
                 }
             }
         }
@@ -288,10 +310,28 @@ struct WebViewContainerView: View {
             
             }
         }
-        .onChange(of: scenePhase) { newPhase in
-            if newPhase == .active {
-                RemoteConfig.shared.fetchConfig()
+        .modifier(ScenePhaseRefreshModifier(scenePhase: scenePhase))
+    }
+}
+
+private struct ScenePhaseRefreshModifier: ViewModifier {
+    let scenePhase: ScenePhase
+
+    func body(content: Content) -> some View {
+        if #available(iOS 17.0, *) {
+            content.onChange(of: scenePhase, initial: false) { _, newPhase in
+                handlePhase(newPhase)
             }
+        } else {
+            content.onChange(of: scenePhase) { newPhase in
+                handlePhase(newPhase)
+            }
+        }
+    }
+
+    private func handlePhase(_ phase: ScenePhase) {
+        if phase == .active {
+            RemoteConfig.shared.fetchConfig()
         }
     }
 }
@@ -400,6 +440,12 @@ struct ShareOptionsView: View {
                                     .fontWeight(.medium)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(2)
+                                
+                                Text(currentURL.absoluteString)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(1)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)

@@ -24,10 +24,30 @@ struct MainMenuView: View {
     // 環境變數，用於打開 URL
     @Environment(\.openURL) private var openURL
     
-    // 請將 "yourotherapp://" 替換成您想打開的 App 的 URL Scheme
-    private let otherAppURLScheme = "unitymusicapp1007://"
+    @State private var externalAppURL: URL = MainMenuView.initialExternalURL()
 
     var body: some View {
+        TabView {
+            mainMenuContent
+                .tabItem {
+                    Label("主選單", systemImage: "safari")
+                }
+
+            RemoteConfigInspectorView()
+                .tabItem {
+                    Label("遠端設定", systemImage: "gearshape.arrow.trianglehead.2.clockwise.rotate.90")
+                }
+        }
+        .statusBarHidden(true)
+        .onReceive(NotificationCenter.default.publisher(for: .remoteUIFlagsDidUpdate)) { note in
+            if let urlString = note.userInfo?["external_app_url"] as? String,
+               let url = URL(string: urlString) {
+                externalAppURL = url
+            }
+        }
+    }
+
+    private var mainMenuContent: some View {
         // 使用 NavigationStack 來管理頁面導航
         NavigationStack {
             ZStack {
@@ -98,23 +118,25 @@ struct MainMenuView: View {
             .statusBarHidden(true)
             .navigationBarHidden(true) // 隱藏導航列標題
         }
-        .statusBarHidden(true)
     }
 
     /// 嘗試打開另一個 App 的 URL Scheme
     private func openOtherApp() {
-        guard let url = URL(string: otherAppURLScheme) else {
-            print("無效的 URL Scheme: \(otherAppURLScheme)")
-            return
-        }
-        
         // 使用 openURL 來打開外部連結
-        openURL(url) { accepted in
+        openURL(externalAppURL) { accepted in
             if !accepted {
                 print("無法打開此 URL Scheme，可能尚未安裝對應的 App。")
                 // 在這裡可以加入提示用戶的 UI，例如一個 Alert
             }
         }
+    }
+
+    private static func initialExternalURL() -> URL {
+        if let cached = UserDefaults.standard.string(forKey: RemoteConfig.Defaults.remoteExternalAppURL),
+           let url = URL(string: cached) {
+            return url
+        }
+        return URL(string: RemoteConfig.defaultExternalAppURL)!
     }
 }
 
