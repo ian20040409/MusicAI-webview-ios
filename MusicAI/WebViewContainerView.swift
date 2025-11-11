@@ -293,6 +293,7 @@ struct WebViewContainerView: View {
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+            .presentationBackground(.ultraThinMaterial)
         }
         .alert("更改網址", isPresented: $showingURLPrompt) {
             TextField("請輸入新網址", text: $newURLString)
@@ -440,11 +441,7 @@ struct ShareOptionsView: View {
                                     .multilineTextAlignment(.center)
                                     .lineLimit(2)
                                 
-                                Text(currentURL.absoluteString)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(1)
+                                
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -482,7 +479,7 @@ struct ShareOptionsView: View {
                                 ShareOptionButton(
                                     icon: "memories.slash",
                                     title: "重設",
-                                    subtitle: "⚠"
+                                    subtitle: "回到首頁URL"
                                 ) {
                                     if let current = webView.url, current.absoluteString == url.absoluteString {
                                             // 網址相同 → 強制重新載入（忽略快取）
@@ -625,7 +622,7 @@ struct LoadingOverlay: View {
                     .foregroundColor(.white)
             }
             .padding(24)
-            .background(.regularMaterial, in: .rect(cornerRadius: 16, style: .continuous))
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 16, style: .continuous))
         }
     }
 }
