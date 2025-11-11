@@ -14,8 +14,8 @@ struct Haptics {
 struct PressableButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.81 : 1.0)
+            .animation(.easeInOut(duration: 0.152), value: configuration.isPressed)
     }
 }
 
@@ -23,6 +23,7 @@ struct PressableButtonStyle: ButtonStyle {
 struct MainMenuView: View {
     // 環境變數，用於打開 URL
     @Environment(\.openURL) private var openURL
+    @Environment(\.colorScheme) private var colorScheme
     
     @State private var externalAppURL: URL = MainMenuView.initialExternalURL()
 
@@ -53,10 +54,11 @@ struct MainMenuView: View {
             ZStack {
                 // 背景漸層
                 LinearGradient(
-                    gradient: Gradient(colors: [Color.blue.opacity(0.6), Color.black]),
-                    startPoint: .top,
-                    endPoint: .bottom
+                    gradient: Gradient(colors: backgroundGradientColors),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
+                .opacity(colorScheme == .dark ? 0.6 : 0.8)
                 .ignoresSafeArea()
 
                 VStack(spacing: 30) {
@@ -64,11 +66,11 @@ struct MainMenuView: View {
                     VStack {
                         Image(systemName: "apple.haptics.and.music.note")
                             .font(.system(size: 60))
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                         Text("MusicAI")
                             .font(.largeTitle)
                             .fontWeight(.bold)
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                     }
                     .padding(.bottom, 40)
 
@@ -78,12 +80,12 @@ struct MainMenuView: View {
                     }
                     .buttonStyle(PressableButtonStyle())
                     .simultaneousGesture(TapGesture().onEnded {
-                        Haptics.mediumImpact()
+                        Haptics.success()
                     })
                     
                     // 打開另一個 App 的按鈕
                     Button(action: {
-                        Haptics.success()
+                        Haptics.heavyImpact()
                         openOtherApp()
                     }) {
                         MenuButton(title: "打開樂伴 (UnityApp)", icon: "arrow.up.forward.app")
@@ -138,29 +140,47 @@ struct MainMenuView: View {
         }
         return URL(string: RemoteConfig.defaultExternalAppURL)!
     }
+    
+    private var backgroundGradientColors: [Color] {
+        if colorScheme == .dark {
+            return [
+                Color(red: 0.08, green: 0.08, blue: 0.12),
+                Color(red: 0.15, green: 0.18, blue: 0.28)
+            ]
+        } else {
+            return [
+                Color(red: 0.95, green: 0.97, blue: 1.0),
+                Color(red: 0.78, green: 0.86, blue: 1.0)
+            ]
+        }
+    }
 }
 
 // MARK: - 主選單按鈕樣式
 struct MenuButton: View {
     let title: String
     let icon: String
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
+        let textColor: Color = colorScheme == .dark ? .white : .primary
+        let border = colorScheme == .dark ? Color.white.opacity(0.3) : Color.black.opacity(0.15)
+        let effect: Glass = colorScheme == .dark
+            ? .regular.tint(.white.opacity(0.2)).interactive()
+            : .regular.tint(.white.opacity(0.4)).interactive()
+        
         HStack {
             Image(systemName: icon)
             Text(title)
                 .fontWeight(.semibold)
         }
         .font(.headline)
-        .foregroundColor(.white)
+        .foregroundColor(textColor)
         .padding()
         .frame(maxWidth: .infinity)
-        .background(Color.white.opacity(0.15))
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-        )
+        
+        .glassEffect(in: .rect(cornerRadius: 20.0))
+        .shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: 6)
     }
 }
 
