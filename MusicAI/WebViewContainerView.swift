@@ -242,8 +242,9 @@ struct WebViewContainerView: View {
         .navigationBarBackButtonHidden(false)
         .toolbar(.hidden, for: .tabBar) // Hide tab bar when pushing into WebView
         .toolbar {
-            // Leading: 回到主畫面（Home）按鈕 — 使用 navigateHome() 確保 cookie 與載入一致性
-            ToolbarItem(placement: .navigationBarLeading) {
+            // Single group containing both Home and Share/Options buttons
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                // Home button
                 Button(action: {
                     hapticTap()
                     // 1) 先抓最新的 Cloudflare Worker 設定
@@ -264,11 +265,8 @@ struct WebViewContainerView: View {
                     }
                 }
                 .disabled(isNavigatingHome)
-            }
 
-            // Trailing: 分享 / 選單 按鈕（保留原本的 share options，但加入 haptic）
-            if shareOptionsEnabled {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                // Share / Options button (conditional)
                     Button(action: {
                         hapticTap()
                         showingShareOptions = true
@@ -542,7 +540,7 @@ struct ShareOptionsView: View {
             )
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
                         dismiss()
                     }) {
