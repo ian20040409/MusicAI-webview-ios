@@ -56,9 +56,12 @@ You can download the latest pre-built version of the app directly from the **[Re
 
 
 ## Screenshots
-<p align="left">
-  <img src="https://i.meee.com.tw/SgoE3Ql.png" alt="MusicAI Screenshot 1" height="590"/>
-  <img src="https://i.meee.com.tw/En8vskJ.png" alt="MusicAI Screenshot 2" height="590"/>
+<p align="center">
+  
+<img src="https://i.meee.com.tw/X3pvREy.png" alt="MusicAI Screenshot 1" height="450"/>
+<img src="https://i.meee.com.tw/En8vskJ.png" alt="MusicAI Screenshot 2" height="450"/>
+<img src="https://i.meee.com.tw/BFJ4Vb3.png" alt="MusicAI Screenshot 3" height="450"/>
+
 </p>
 
 ## License
