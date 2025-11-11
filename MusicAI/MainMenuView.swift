@@ -26,6 +26,7 @@ struct MainMenuView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     @State private var externalAppURL: URL = MainMenuView.initialExternalURL()
+    @State private var shouldHideSidebar: Bool = false
 
     var body: some View {
         TabView {
@@ -39,8 +40,12 @@ struct MainMenuView: View {
                     Label("遠端設定", systemImage: "gearshape.arrow.trianglehead.2.clockwise.rotate.90")
                 }
         }
-        .applySidebarAdaptableTabStyle() // iPad 上自動切換為側邊欄樣式（iOS 18+）
+        .applySidebarAdaptableTabStyle(enabled: !shouldHideSidebar) // 進入 WebView 時停用側邊欄樣式
         .statusBarHidden(true)
+        .onPreferenceChange(SidebarHiddenPreferenceKey.self) { value in
+            // 由子頁面（如 WebViewContainerView）要求隱藏/顯示側邊欄
+            shouldHideSidebar = value
+        }
         .onReceive(NotificationCenter.default.publisher(for: .remoteUIFlagsDidUpdate)) { note in
             if let urlString = note.userInfo?["external_app_url"] as? String,
                let url = URL(string: urlString) {
@@ -193,12 +198,21 @@ struct MenuButton: View {
 // MARK: - Helpers: Conditional Sidebar Adaptable TabView Style
 extension View {
     @ViewBuilder
-    func applySidebarAdaptableTabStyle() -> some View {
-        if #available(iOS 18.0, *) {
+    func applySidebarAdaptableTabStyle(enabled: Bool = true) -> some View {
+        if #available(iOS 18.0, *), enabled {
             self.tabViewStyle(.sidebarAdaptable)
         } else {
             self
         }
+    }
+}
+
+// MARK: - PreferenceKey: Hide Sidebar when needed
+struct SidebarHiddenPreferenceKey: PreferenceKey {
+    static var defaultValue: Bool = false
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        // If any child requests hiding, hide it
+        value = value || nextValue()
     }
 }
 

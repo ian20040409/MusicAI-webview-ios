@@ -347,6 +347,8 @@ struct WebViewContainerView: View {
             }
         }
         .modifier(ScenePhaseRefreshModifier(scenePhase: scenePhase))
+        // 要求父層（MainMenuView 的 TabView）隱藏側邊欄
+        .preference(key: SidebarHiddenPreferenceKey.self, value: true)
     }
 }
 
