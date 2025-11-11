@@ -208,12 +208,24 @@ struct WebViewContainerView: View {
                         }
                     }
                 }
-                
-                
-                
-            
                 // 移除邊距和圓角，並確保忽略所有安全區域
                 .ignoresSafeArea()
+                // ▼ Blackout overlay when navigating home
+                .overlay(
+                    Group {
+                        if isNavigatingHome {
+                            ZStack {
+                                Color.black
+                                    .ignoresSafeArea()
+                                ProgressView()
+                                    .scaleEffect(1.2)
+                                    .tint(.white)
+                            }
+                            .transition(.opacity)
+                            .animation(.easeInOut(duration: 0.2), value: isNavigatingHome)
+                        }
+                    }
+                )
         }
         .onReceive(NotificationCenter.default.publisher(for: .webThemeColor)) { note in
             if let hex = note.object as? String, let ui = UIColor(hex: hex) {
@@ -253,7 +265,7 @@ struct WebViewContainerView: View {
                     Task { @MainActor in
                         isNavigatingHome = true
                         // 2) 稍等一下讓 fetch 完成（簡單穩定做法）
-                        try? await Task.sleep(nanoseconds: 400_000_000) // 0.4s
+                        try? await Task.sleep(nanoseconds: 550_000_000) // 0.4s
 
                         // 3) 先清除所有瀏覽資料（快取 / Cookie / 網站資料）
                         let dataStore = WKWebsiteDataStore.default()
@@ -277,6 +289,8 @@ struct WebViewContainerView: View {
                         let request = URLRequest(url: homeURL)
                         webView.load(request)
 
+                        // 保持黑屏一小段時間，避免閃爍
+                        try? await Task.sleep(nanoseconds: 300_000_000) // 0.3s
                         isNavigatingHome = false
                     }
                 }) {
