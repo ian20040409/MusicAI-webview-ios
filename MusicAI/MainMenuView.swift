@@ -39,6 +39,7 @@ struct MainMenuView: View {
                     Label("遠端設定", systemImage: "gearshape.arrow.trianglehead.2.clockwise.rotate.90")
                 }
         }
+        .applySidebarAdaptableTabStyle() // iPad 上自動切換為側邊欄樣式（iOS 18+）
         .statusBarHidden(true)
         .onReceive(NotificationCenter.default.publisher(for: .remoteUIFlagsDidUpdate)) { note in
             if let urlString = note.userInfo?["external_app_url"] as? String,
@@ -186,6 +187,18 @@ struct MenuButton: View {
         .shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: 6)
         .accessibilityLabel("\(title)")
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+// MARK: - Helpers: Conditional Sidebar Adaptable TabView Style
+extension View {
+    @ViewBuilder
+    func applySidebarAdaptableTabStyle() -> some View {
+        if #available(iOS 18.0, *) {
+            self.tabViewStyle(.sidebarAdaptable)
+        } else {
+            self
+        }
     }
 }
 
