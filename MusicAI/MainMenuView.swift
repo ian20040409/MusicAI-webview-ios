@@ -169,18 +169,23 @@ struct MenuButton: View {
             ? .regular.tint(.white.opacity(0.2)).interactive()
             : .regular.tint(.white.opacity(0.4)).interactive()
         
-        HStack {
+        HStack(spacing: 12) {
             Image(systemName: icon)
+                .font(.headline)
             Text(title)
+                .font(.headline)
                 .fontWeight(.semibold)
+                .lineLimit(1)
         }
-        .font(.headline)
         .foregroundColor(textColor)
-        .padding()
-        .frame(maxWidth: .infinity)
-        
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .center) // 提升可點擊高度
+        .padding(.horizontal, 20)
+        .background { Color.clear } // 需要一個背景才能確保擴展後區域可被命中
         .glassEffect(in: .rect(cornerRadius: 20.0))
+        .contentShape(.rect(cornerRadius: 20.0)) // 讓圓角外觀整體成為可點擊區域
         .shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: 6)
+        .accessibilityLabel("\(title)")
+        .accessibilityAddTraits(.isButton)
     }
 }
 

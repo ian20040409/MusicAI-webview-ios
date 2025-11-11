@@ -38,6 +38,8 @@ struct RemoteConfigInspectorView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
+                        // Haptic feedback before triggering fetch
+                        Haptics.mediumImpact()
                         Task { await fetchConfig(force: true) }
                     } label: {
                         Image(systemName: "arrow.clockwise")
