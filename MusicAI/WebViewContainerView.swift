@@ -267,6 +267,7 @@ struct WebViewContainerView: View {
                 .disabled(isNavigatingHome)
 
                 // Share / Options button (conditional)
+                if shareOptionsEnabled {
                     Button(action: {
                         hapticTap()
                         showingShareOptions = true
