@@ -250,10 +250,20 @@ struct WebViewContainerView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        // ▼ 修改：顯示系統預設的返回按鈕 (改為 false)
-        .navigationBarBackButtonHidden(false)
+        // 使用自訂關閉按鈕關閉 fullScreenCover，不顯示系統返回鍵
+        .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .tabBar) // Hide tab bar when pushing into WebView
         .toolbar {
+            // Leading: 關閉全螢幕 WebView
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    hapticTap()
+                    dismiss()
+                }) {
+                    Image(systemName: "xmark")
+                }
+                .fontWeight(.semibold)
+            }
             // Single group containing both Home and Share/Options buttons
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 //cloud sync Home button
@@ -347,8 +357,6 @@ struct WebViewContainerView: View {
             }
         }
         .modifier(ScenePhaseRefreshModifier(scenePhase: scenePhase))
-        // 要求父層（MainMenuView 的 TabView）隱藏側邊欄
-        .preference(key: SidebarHiddenPreferenceKey.self, value: true)
     }
 }
 

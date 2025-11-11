@@ -26,33 +26,31 @@ struct MainMenuView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     @State private var externalAppURL: URL = MainMenuView.initialExternalURL()
-    @State private var shouldHideSidebar: Bool = false
+    @State private var showWebView: Bool = false
 
     var body: some View {
         TabView {
             mainMenuContent
-                .tabItem {
-                    Label("主選單", systemImage: "safari")
-                }
-
+                .tabItem { Label("主選單", systemImage: "safari") }
             RemoteConfigInspectorView()
-                .tabItem {
-                    Label("遠端設定", systemImage: "gearshape.arrow.trianglehead.2.clockwise.rotate.90")
-                }
+                .tabItem { Label("遠端設定", systemImage: "gearshape.arrow.trianglehead.2.clockwise.rotate.90") }
         }
-        .applySidebarAdaptableTabStyle(enabled: !shouldHideSidebar) // 進入 WebView 時停用側邊欄樣式
+        .applySidebarAdaptableTabStyle() // iPad 上啟用側邊欄樣式（iOS 18+）
         .statusBarHidden(true)
-        .onPreferenceChange(SidebarHiddenPreferenceKey.self) { value in
-            // 由子頁面（如 WebViewContainerView）要求隱藏/顯示側邊欄
-            shouldHideSidebar = value
-        }
         .onReceive(NotificationCenter.default.publisher(for: .remoteUIFlagsDidUpdate)) { note in
             if let urlString = note.userInfo?["external_app_url"] as? String,
                let url = URL(string: urlString) {
                 externalAppURL = url
             }
         }
+        .fullScreenCover(isPresented: $showWebView) {
+            NavigationStack {
+                WebViewContainerView()
+            }
+        }
     }
+
+    // 內容區
 
     private var mainMenuContent: some View {
         // 使用 NavigationStack 來管理頁面導航
@@ -80,14 +78,15 @@ struct MainMenuView: View {
                     }
                     .padding(.bottom, 40)
 
-                    // 導航到 WebView 的按鈕
-                    NavigationLink(destination: WebViewContainerView()) {
+                    // 進入 WebView（全螢幕呈現以隱藏 iPad 側邊欄）
+                    Button(action: {
+                        Haptics.success()
+                        showWebView = true
+                    }) {
                         MenuButton(title: "進入Ai Chatbot", icon: "sparkles")
                     }
                     .buttonStyle(PressableButtonStyle())
-                    .simultaneousGesture(TapGesture().onEnded {
-                        Haptics.success()
-                    })
+                    
                     
                     // 打開另一個 App 的按鈕
                     Button(action: {
@@ -207,14 +206,6 @@ extension View {
     }
 }
 
-// MARK: - PreferenceKey: Hide Sidebar when needed
-struct SidebarHiddenPreferenceKey: PreferenceKey {
-    static var defaultValue: Bool = false
-    static func reduce(value: inout Bool, nextValue: () -> Bool) {
-        // If any child requests hiding, hide it
-        value = value || nextValue()
-    }
-}
 
 // MARK: - 預覽
 struct MainMenuView_Previews: PreviewProvider {
