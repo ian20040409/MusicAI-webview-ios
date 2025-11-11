@@ -27,7 +27,7 @@ struct RemoteConfigInspectorView: View {
                 }
 
                 Section("解析結果") {
-                    LabeledContent("home_url", value: truncated(payload?.homeURL))
+                    LabeledContent("home_url", value: truncated(payload?.homeURL, limit: 14))
                     LabeledContent("user_agent", value: truncated(payload?.userAgent))
                     LabeledContent("show_share_options", value: truncated(payload?.showShareDescription))
                     LabeledContent("external_app_url", value: truncated(payload?.externalAppURL))
@@ -97,10 +97,10 @@ struct RemoteConfigInspectorView: View {
         }
     }
 
-    private func truncated(_ value: String?) -> String {
+    private func truncated(_ value: String?, limit: Int = 7) -> String {
         guard let value, !value.isEmpty else { return "—" }
-        if value.count <= 7 { return value }
-        let prefix = value.prefix(7)
+        if value.count <= limit { return value }
+        let prefix = value.prefix(limit)
         return "\(prefix)…"
     }
 }
