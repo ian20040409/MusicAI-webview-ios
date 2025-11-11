@@ -244,18 +244,40 @@ struct WebViewContainerView: View {
         .toolbar {
             // Single group containing both Home and Share/Options buttons
             ToolbarItemGroup(placement: .navigationBarTrailing) {
-                // Home button
+                //cloud sync Home button
                 Button(action: {
                     hapticTap()
                     // 1) 先抓最新的 Cloudflare Worker 設定
                     RemoteConfig.shared.fetchConfig()
 
                     Task { @MainActor in
+                        isNavigatingHome = true
                         // 2) 稍等一下讓 fetch 完成（簡單穩定做法）
                         try? await Task.sleep(nanoseconds: 400_000_000) // 0.4s
 
-                        // 3) 回首頁：若網址相同用 reloadFromOrigin，否則 load 新首頁
-                        await navigateHome(forceReload: true)
+                        // 3) 先清除所有瀏覽資料（快取 / Cookie / 網站資料）
+                        let dataStore = WKWebsiteDataStore.default()
+                        let types = WKWebsiteDataStore.allWebsiteDataTypes()
+                        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                            dataStore.removeData(ofTypes: types, modifiedSince: Date.distantPast) {
+                                continuation.resume()
+                            }
+                        }
+
+                        // 額外清除系統層級快取與共享 Cookie，避免殘留
+                        URLCache.shared.removeAllCachedResponses()
+                        if let cookies = HTTPCookieStorage.shared.cookies {
+                            for c in cookies {
+                                HTTPCookieStorage.shared.deleteCookie(c)
+                            }
+                        }
+
+                        // 4) 直接回到設定的首頁 URL（不判斷目前網址是否相同）
+                        webView.stopLoading()
+                        let request = URLRequest(url: homeURL)
+                        webView.load(request)
+
+                        isNavigatingHome = false
                     }
                 }) {
                     if isNavigatingHome {
