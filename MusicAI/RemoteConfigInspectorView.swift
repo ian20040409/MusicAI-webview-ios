@@ -37,7 +37,7 @@ struct RemoteConfigInspectorView: View {
                 }
 
                 Section("Endpoint 覆寫") {
-                    SecureField("例如：https://example.workers.dev/", text: $workerEndpointInput)
+                    SecureField("URL:", text: $workerEndpointInput)
                         .textInputAutocapitalization(.never)
                         .disableAutocorrection(true)
                         .keyboardType(.URL)
@@ -52,7 +52,7 @@ struct RemoteConfigInspectorView: View {
                             }
                         }
                         .buttonStyle(.borderedProminent)
-                        Button("清除覆寫") {
+                        Button("清除覆寫並還原預設值") {
                             Haptics.warning()
                             RemoteConfig.setWorkerEndpointOverride(nil)
                             workerEndpointInput = ""
@@ -136,38 +136,5 @@ struct RemoteConfigInspectorView: View {
         if value.count <= limit { return value }
         let prefix = value.prefix(limit)
         return "\(prefix)…"
-    }
-}
-
-private struct RemoteConfigPayload: Decodable {
-    let homeURL: String?
-    let userAgent: String?
-    let showShareOptions: Bool?
-    let externalAppURL: String?
-    let version: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case homeURL = "home_url"
-        case userAgent = "user_agent"
-        case showShareOptions = "show_share_options"
-        case externalAppURL = "external_app_url"
-        case version
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        homeURL = try container.decodeIfPresent(String.self, forKey: .homeURL)
-        userAgent = try container.decodeIfPresent(String.self, forKey: .userAgent)
-        showShareOptions = try container.decodeIfPresent(Bool.self, forKey: .showShareOptions)
-        externalAppURL = try container.decodeIfPresent(String.self, forKey: .externalAppURL)
-        version = try container.decodeIfPresent(Int.self, forKey: .version)
-    }
-
-    var showShareDescription: String? {
-        showShareOptions.map { $0 ? "true" : "false" }
-    }
-
-    var versionDescription: String? {
-        version.map(String.init)
     }
 }

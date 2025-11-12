@@ -1,5 +1,5 @@
     import Foundation
-import Combine
+    import Combine
 
 final class RemoteConfig: ObservableObject {
     static let shared = RemoteConfig()
@@ -44,7 +44,6 @@ final class RemoteConfig: ObservableObject {
 
     /// 抓取遠端設定（會自動更新 currentHomeURL）
     func fetchConfig() {
-        // 以 timestamp 查詢參數避開任何中間層快取
         let endpoint = RemoteConfig.workerEndpoint
         var requestURL = endpoint
         if var comps = URLComponents(url: endpoint, resolvingAgainstBaseURL: false) {
@@ -52,8 +51,7 @@ final class RemoteConfig: ObservableObject {
             requestURL = comps.url ?? endpoint
         }
 
-    var request = URLRequest(url: requestURL, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 8)
-        // 嚴格禁用快取（瀏覽器/iOS/中介）
+        var request = URLRequest(url: requestURL, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 8)
         request.setValue("no-store, no-cache, must-revalidate", forHTTPHeaderField: "Cache-Control")
         request.setValue("no-cache", forHTTPHeaderField: "Pragma")
 
@@ -64,56 +62,47 @@ final class RemoteConfig: ObservableObject {
 
         session.dataTask(with: request) { [weak self] data, _, error in
             guard let self = self else { return }
-            guard error == nil, let data = data else { return }
-
-            // 解析 JSON
-            guard let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            guard error == nil, let data = data else {
+                self.reportError("網路錯誤或無資料")
                 return
             }
-
-            DispatchQueue.main.async {
-                self.applyConfigDictionary(obj)
+            do {
+                let payload = try JSONDecoder().decode(RemoteConfigPayload.self, from: data)
+                DispatchQueue.main.async {
+                    self.applyPayload(payload)
+                }
+            } catch {
+                self.reportError("JSON 解析失敗: \(error.localizedDescription)")
             }
         }.resume()
     }
 
-    private func applyConfigDictionary(_ obj: [String: Any]) {
-        print("Config JSON:", obj)
+    private func applyPayload(_ payload: RemoteConfigPayload) {
         let defaults = UserDefaults.standard
 
-        // 1) home_url
+        // 驗證 home_url
         let previousHome = currentHomeURL
         let resolvedHomeURL: URL
-        if let urlStr = obj["home_url"] as? String,
-           let url = URL(string: urlStr) {
+        if let raw = payload.homeURL?.trimmingCharacters(in: .whitespacesAndNewlines),
+           let url = URL(string: raw), url.scheme?.hasPrefix("http") == true {
             resolvedHomeURL = url
-            defaults.set(urlStr, forKey: Defaults.cachedHome)
-        } else if let cached = defaults.string(forKey: Defaults.cachedHome),
-                  let url = URL(string: cached) {
+            defaults.set(raw, forKey: Defaults.cachedHome)
+        } else if let cached = defaults.string(forKey: Defaults.cachedHome), let url = URL(string: cached) {
             resolvedHomeURL = url
         } else {
             resolvedHomeURL = AppURLs.fallback
         }
-
         currentHomeURL = resolvedHomeURL
         NotificationCenter.default.post(name: RemoteConfig.didUpdateNotification, object: resolvedHomeURL)
-
         if previousHome?.absoluteString != resolvedHomeURL.absoluteString {
-                NotifyOrToast.send(
-                    title: "✨有新的內容✨",
-                     body: "✅已部署設定需重開APP套用更新",
-                     symbolName: "gear.badge.checkmark"
-                 )
-             }
-     
-        // 2) user_agent
+            NotifyOrToast.send(title: "✨有新的內容✨", body: "✅已部署設定需重開APP套用更新", symbolName: "gear.badge.checkmark")
+        }
+
+        // 驗證 user_agent
         let resolvedUserAgent: String
-        if let ua = (obj["user_agent"] as? String)?
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-           !ua.isEmpty {
+        if let ua = payload.userAgent?.trimmingCharacters(in: .whitespacesAndNewlines), !ua.isEmpty {
             resolvedUserAgent = ua
-        } else if let cachedUA = defaults.string(forKey: Defaults.cachedUserAgent),
-                  !cachedUA.isEmpty {
+        } else if let cachedUA = defaults.string(forKey: Defaults.cachedUserAgent), !cachedUA.isEmpty {
             resolvedUserAgent = cachedUA
         } else {
             resolvedUserAgent = RemoteConfig.defaultUserAgent
@@ -121,9 +110,9 @@ final class RemoteConfig: ObservableObject {
         defaults.set(resolvedUserAgent, forKey: Defaults.cachedUserAgent)
         NotificationCenter.default.post(name: .userAgentDidUpdate, object: resolvedUserAgent)
 
-        // 3) show_share_options + external_app_url
+        // show_share_options
         let resolvedShareOptions: Bool
-        if let share = obj["show_share_options"] as? Bool {
+        if let share = payload.showShareOptions {
             resolvedShareOptions = share
         } else if defaults.object(forKey: Defaults.remoteShowShareOptions) != nil {
             resolvedShareOptions = defaults.bool(forKey: Defaults.remoteShowShareOptions)
@@ -132,13 +121,14 @@ final class RemoteConfig: ObservableObject {
         }
         defaults.set(resolvedShareOptions, forKey: Defaults.remoteShowShareOptions)
 
+        // external_app_url（必須有 scheme）
         let resolvedExternalAppURL: String
-        if let external = (obj["external_app_url"] as? String)?
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-           !external.isEmpty {
+        if let external = payload.externalAppURL?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !external.isEmpty,
+           let extURL = URL(string: external),
+           extURL.scheme != nil {
             resolvedExternalAppURL = external
-        } else if let cachedExternal = defaults.string(forKey: Defaults.remoteExternalAppURL),
-                  !cachedExternal.isEmpty {
+        } else if let cachedExternal = defaults.string(forKey: Defaults.remoteExternalAppURL), !cachedExternal.isEmpty {
             resolvedExternalAppURL = cachedExternal
         } else {
             resolvedExternalAppURL = RemoteConfig.defaultExternalAppURL
@@ -154,6 +144,19 @@ final class RemoteConfig: ObservableObject {
             ]
         )
     }
+
+    private func reportError(_ message: String) {
+        DispatchQueue.main.async {
+            NotifyOrToast.send(title: "⚠️設定更新失敗", body: message, symbolName: "exclamationmark.triangle")
+        }
+    }
+
+#if DEBUG
+    // 僅供單元測試注入
+    func applyTestPayload(_ payload: RemoteConfigPayload) {
+        applyPayload(payload)
+    }
+#endif
 }
 
 extension Notification.Name {
