@@ -29,7 +29,7 @@ jobs:
             fi
             echo "🗑️ 這批 $(echo "$ids" | wc -l) 筆將被刪除..."
             for id in $ids; do
-              gh run delete "$id" --repo "$GH_REPO"
+              gh run delete "$id" --repo "$GH_REPO" || echo "⚠️ 無法刪除 run $id (可能權限不足或正在執行中)"
             done
           done
           echo "🔥 全部 workflow runs 已刪除完成。"
