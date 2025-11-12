@@ -66,7 +66,7 @@ You can download the latest pre-built version of the app directly from the **[Re
 
 ## License
 
-This project is licensed under the MIT License.
+Educational & Demonstration Use Only © 2025 LNU
 
 ---
 
