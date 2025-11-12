@@ -6,17 +6,28 @@ final class RemoteConfig: ObservableObject {
     static let didUpdateNotification = Notification.Name("remoteConfigDidUpdate")
     static let defaultUserAgent = "MusicAI/1.0 (lnu)"
     static let defaultExternalAppURL = "unitymusicapp1007://"
-    static let workerEndpoint = URL(string: "https://ai-music-client-url-json.ian20040409.workers.dev/")!
+    /// 預設 Cloudflare Worker 端點（可由使用者覆寫）
+    static let defaultWorkerEndpoint = URL(string: "https://ai-music-client-url-json.ian20040409.workers.dev/")!
+    /// 目前使用的 Worker 端點（若使用者提供合法覆寫則採用覆寫值）
+    static var workerEndpoint: URL {
+        let defaults = UserDefaults.standard
+        if let override = defaults.string(forKey: Defaults.remoteWorkerEndpointOverride),
+           !override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           let url = URL(string: override) {
+            return url
+        }
+        return defaultWorkerEndpoint
+    }
 
     enum Defaults {
         static let cachedHome = "remote_home_url"
         static let cachedUserAgent = "cachedUserAgent"
         static let remoteShowShareOptions = "remoteShowShareOptions"
         static let remoteExternalAppURL = "remoteExternalAppURL"
+        static let remoteWorkerEndpointOverride = "remoteWorkerEndpointOverride"
     }
 
-    // Worker JSON URL（換成你自己的 Cloudflare Worker 網址）
-    private let endpoint = RemoteConfig.workerEndpoint
+    // 動態 Worker JSON URL（可由使用者覆寫）
 
     /// 當前生效的首頁 URL
     @Published var currentHomeURL: URL?
@@ -34,13 +45,14 @@ final class RemoteConfig: ObservableObject {
     /// 抓取遠端設定（會自動更新 currentHomeURL）
     func fetchConfig() {
         // 以 timestamp 查詢參數避開任何中間層快取
+        let endpoint = RemoteConfig.workerEndpoint
         var requestURL = endpoint
         if var comps = URLComponents(url: endpoint, resolvingAgainstBaseURL: false) {
             comps.queryItems = (comps.queryItems ?? []) + [URLQueryItem(name: "t", value: String(Int(Date().timeIntervalSince1970)))]
             requestURL = comps.url ?? endpoint
         }
 
-        var request = URLRequest(url: requestURL, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 8)
+    var request = URLRequest(url: requestURL, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 8)
         // 嚴格禁用快取（瀏覽器/iOS/中介）
         request.setValue("no-store, no-cache, must-revalidate", forHTTPHeaderField: "Cache-Control")
         request.setValue("no-cache", forHTTPHeaderField: "Pragma")
@@ -147,4 +159,27 @@ final class RemoteConfig: ObservableObject {
 extension Notification.Name {
     static let userAgentDidUpdate = Notification.Name("remoteConfigUserAgentDidUpdate")
     static let remoteUIFlagsDidUpdate = Notification.Name("remoteConfigRemoteUIFlagsDidUpdate")
+    static let workerEndpointDidUpdate = Notification.Name("remoteConfigWorkerEndpointDidUpdate")
+}
+
+// MARK: - Worker Endpoint Override API
+extension RemoteConfig {
+    /// 設定或清除 Worker 端點覆寫；傳入 nil 或空字串即為清除
+    /// - Returns: 是否成功套用（無效 URL 會回傳 false）
+    @discardableResult
+    static func setWorkerEndpointOverride(_ urlString: String?) -> Bool {
+        let defaults = UserDefaults.standard
+        let trimmed = urlString?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if trimmed.isEmpty {
+            defaults.removeObject(forKey: Defaults.remoteWorkerEndpointOverride)
+            NotificationCenter.default.post(name: .workerEndpointDidUpdate, object: workerEndpoint)
+            return true
+        }
+        guard let url = URL(string: trimmed), url.scheme?.isEmpty == false else {
+            return false
+        }
+        defaults.set(trimmed, forKey: Defaults.remoteWorkerEndpointOverride)
+        NotificationCenter.default.post(name: .workerEndpointDidUpdate, object: url)
+        return true
+    }
 }

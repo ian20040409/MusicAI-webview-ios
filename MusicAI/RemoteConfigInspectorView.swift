@@ -5,6 +5,8 @@ struct RemoteConfigInspectorView: View {
     @State private var payload: RemoteConfigPayload?
     @State private var errorMessage: String?
     @State private var lastUpdated: Date?
+    @State private var workerEndpointInput: String = ""
+    @State private var endpointApplyStatus: String?
 
     var body: some View {
         NavigationStack {
@@ -32,6 +34,36 @@ struct RemoteConfigInspectorView: View {
                     LabeledContent("show_share_options", value: truncated(payload?.showShareDescription))
                     LabeledContent("external_app_url", value: truncated(payload?.externalAppURL))
                     LabeledContent("version", value: truncated(payload?.versionDescription))
+                }
+
+                Section("Endpoint 覆寫") {
+                    SecureField("例如：https://example.workers.dev/", text: $workerEndpointInput)
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                        .keyboardType(.URL)
+                        .privacySensitive()
+                    HStack {
+                        Button("套用並重新抓取") {
+                            Haptics.lightImpact()
+                            let ok = RemoteConfig.setWorkerEndpointOverride(workerEndpointInput)
+                            endpointApplyStatus = ok ? "✅ 已套用" : "❌ URL 無效"
+                            if ok {
+                                Task { await fetchConfig(force: true) }
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        Button("清除覆寫") {
+                            Haptics.warning()
+                            RemoteConfig.setWorkerEndpointOverride(nil)
+                            workerEndpointInput = ""
+                            endpointApplyStatus = "🗑️ 已還原預設"
+                            Task { await fetchConfig(force: true) }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    if let endpointApplyStatus {
+                        Text(endpointApplyStatus).font(.caption).foregroundColor(.secondary)
+                    }
                 }
             }
             .navigationTitle("遠端設定")
