@@ -423,7 +423,7 @@ struct WebView: UIViewRepresentable {
             }
 
             // 保留輕微向上捲動（可視需要調整或移除）
-            let scrollPoint = CGPoint(x: 0, y: 0)
+            let scrollPoint = CGPoint(x: 0, y: 22)
             webView.scrollView.setContentOffset(scrollPoint, animated: true)
         }
     }
