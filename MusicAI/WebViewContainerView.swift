@@ -190,22 +190,17 @@ struct WebViewContainerView: View {
                     Task { @MainActor in
                         // 若通知有附帶新 URL，優先使用
                         let newHome = (note.object as? URL) ?? AppURLs.home
+                        let didChangeHome = homeURL.absoluteString != newHome.absoluteString
                         homeURL = newHome
 
-                        if let current = webView.url {
-                            if current.absoluteString == newHome.absoluteString {
-                                // 同一網址 → 強制從來源刷新（略過快取）
-                                webView.reloadFromOrigin()
-                            } else {
-                                // 不同網址 → 直接載入新網址
-                                let request = makeCookieAwareRequest(for: newHome)
-                                webView.load(request)
-                            }
-                        } else {
-                            // 首次載入或無網址 → 直接載入新網址
-                            let request = makeCookieAwareRequest(for: newHome)
-                            webView.load(request)
+                        guard didChangeHome else {
+                            // 避免重複遠端設定通知造成網頁不停重新整理
+                            return
                         }
+
+                        // 遠端設定確實更新 → 載入新網址
+                        let request = makeCookieAwareRequest(for: newHome)
+                        webView.load(request)
                     }
                 }
                 // 移除邊距和圓角，並確保忽略所有安全區域
